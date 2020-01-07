@@ -45,7 +45,6 @@ async def youtube_notifier():
             add_to_playlist_cache(playlist_id, video_id)
 
 
-
 @bot.command(help='Coloca el canal al cual se enviaran las novedades (nuevos videos canal de YT Absolute)', usage='ytchannel <canal>')
 async def ytchannel(ctx, channel: TextChannel):
     set_yt_notifier_channel(ctx.guild.id, channel.id)
@@ -195,7 +194,7 @@ async def on_ready():
     activity = Game('default prefix: !')
     await bot.change_presence(activity=activity)
     print('Bot is ready.')
-    # youtube_notifier.start()
+    youtube_notifier.start()
 
 
 bot.run(TOKEN)
