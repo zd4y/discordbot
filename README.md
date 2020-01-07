@@ -32,7 +32,7 @@ Alternatively, add the environment variables with export:
 
 ```
 export DISCORD_TOKEN={Your bot's discord token here}
-YT_API_KEY={Your project's youtube api key here}
+export YT_API_KEY={Your project's youtube api key here}
 ```
 
 Then run main.py:
