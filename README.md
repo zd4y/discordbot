@@ -28,7 +28,7 @@ YT_API_KEY={Your project's youtube api key here}
 
 Replace the text between the brackets with the actual tokens, you have to get those from discord and from google.
 
-Alternatively, add the environment variables with export:
+Alternatively, add the environment variables with export from your terminal:
 
 ```
 export DISCORD_TOKEN={Your bot's discord token here}
