@@ -1,7 +1,6 @@
 from discord.ext import commands
 from discord import Color, Embed, utils, Game, Forbidden
 from config import TOKEN, get_prefix, set_prefix
-from util import Checks
 
 
 bot = commands.Bot(command_prefix=get_prefix)
@@ -11,7 +10,7 @@ bot.load_extension('commands')
 
 
 @bot.command(help='Recarga algunos comandos del bot', usage='reload [<extención>]')
-@commands.check(Checks.is_admin)
+@commands.has_permissions(administrator=True)
 async def reload(ctx, *args):
     if args:
         for arg in args:
@@ -30,13 +29,14 @@ async def reload(ctx, *args):
 async def help(ctx, command=None):
     if command:
         cmd = utils.get(bot.commands, name=command)
-        if cmd.aliases:
-            aliases = ', '.join(cmd.aliases)
         embed = Embed(
             title=f'Ayuda sobre el comando {cmd.name}',
-            description=f'{cmd.help}\nAlias: {aliases}\nUso: `{ctx.prefix}{cmd.usage}`',
+            description=f'{cmd.help}\nUso: `{ctx.prefix}{cmd.usage}`',
             color=Color.red()
         )
+        if cmd.aliases:
+            aliases = ', '.join(cmd.aliases)
+            embed.description += f'\nAlias: {aliases}'
         await ctx.send(embed=embed)
     else:
         embed = Embed(
@@ -46,10 +46,10 @@ async def help(ctx, command=None):
         )
         for cmd in bot.commands:
             value = cmd.help
+            value += f'\nUso: `{ctx.prefix}{cmd.usage}`'
             if cmd.aliases:
                 aliases = ', '.join(cmd.aliases)
                 value += f'\nAlias: {aliases}'
-            value += f'\nUso: `{ctx.prefix}{cmd.usage}`'
 
             embed.add_field(name=cmd.name, value=value, inline=False)
 
@@ -57,7 +57,7 @@ async def help(ctx, command=None):
 
 
 @bot.command(help='Muestra el prefix del bot o lo cambia, puedes usar múltiples prefixes pasando varios separados por espacios', usage='prefix [<nuevos prefixes>]')
-@commands.check(Checks.can_manage_server)
+@commands.has_permissions(manage_guild=True)
 async def prefix(ctx, *args):
     if args:
         set_prefix(ctx.message, *args)
@@ -86,26 +86,27 @@ async def prefix(ctx, *args):
 async def on_command_error(ctx, error):
     cmd = ctx.message.content.split()[0]
     embed = Embed(
-        title='Error',
+        title='Error ❌',
         color=Color.red()
     )
-    embed.set_author(name='❌')
     if isinstance(error, commands.CommandNotFound):
         embed.description = f'El comando `{cmd}` no existe.\nPuedes utilizar `{ctx.prefix}help` para ver una lista detallada de los comandos disponibles.'
     elif isinstance(error, commands.CheckFailure):
-        embed.description = f'No tienes permisos suficientes para usar ese comando.'
+        embed.description = 'No tienes permisos suficientes para usar ese comando.'
     elif isinstance(error, Forbidden):
-        embed.description = f'El bot no tiene permisos suficientes para realizar esa acción'
+        embed.description = 'El bot no tiene permisos suficientes para realizar esa acción'
+    elif isinstance(error, commands.MissingRequiredArgument):
+        embed.description = f'Faltan argumentos. Revisa el `{ctx.prefix}help {ctx.command}` para obtener ayuda acerca del comando.'
     else:
         embed.description = 'Error desconocido'
-        print(error)
+        print(error, error.__class__)
     await ctx.send(embed=embed)
 
 
 @bot.event
 async def on_member_join(member):
     channel = member.guild.system_channel
-    default_role = utils.get(member.guild.roles, position=1)
+    default_role = utils.get(member.guild.roles, name='Miembro')
     await member.add_roles(default_role)
 
     if channel:
