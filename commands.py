@@ -4,7 +4,7 @@ from util import Checks
 from typing import Optional
 
 
-@command(help='Saluda al usuario que usó el comando o al mencionado', aliases=['hola'])
+@command(help='Saluda al usuario que usó el comando o al mencionado', aliases=['hola'], usage='hello [<usuario>]')
 async def hello(ctx, member: Optional[Member]):
     member = member or ctx.author
     embed = Embed(
@@ -14,19 +14,19 @@ async def hello(ctx, member: Optional[Member]):
     await ctx.send(embed=embed)
 
 
-@command(help='Elimina los ultimos x mensajes o el último si ningún argumento es usado.')
+@command(help='Elimina los ultimos <cantidad> mensajes o el último si ningún argumento es usado.', usage='clear [<cantidad>]')
 @check(Checks.can_manage_messages)
 async def clear(ctx, amount=1):
     await ctx.channel.purge(limit=amount)
     embed = Embed(
-        title='✅ Mensajes eliminados!',
+        title='Mensajes eliminados! ✅',
         description=f'{amount} mensajes han sido eliminados satisfactoriamente',
         color=Color.red()
     )
     await ctx.send(embed=embed)
 
 
-@command(help='Información sobre el servidor')
+@command(help='Información sobre el servidor', usage='info')
 async def info(ctx):
     embed = Embed(
         title='Información acerca del Servidor',
@@ -43,7 +43,7 @@ async def info(ctx):
     await ctx.send(embed=embed)
 
 
-@command(help='Muestra la foto de un usuario en un tamaño mas grande', aliases=['image', 'photo', 'foto', 'imagen'])
+@command(help='Muestra la foto de un usuario en un tamaño grande', aliases=['image', 'photo', 'foto', 'imagen'], usage='avatar [<usuario>]')
 async def avatar(ctx, member: Optional[Member]):
     member = member or ctx.author
     embed = Embed(
@@ -53,8 +53,30 @@ async def avatar(ctx, member: Optional[Member]):
     await ctx.send(embed=embed)
 
 
+@command(help='Prohible un usuario en el servidor', usage='ban <usuario> [<razón>]')
+async def ban(ctx, member: Optional[Member], reason=None):
+    await member.ban(reason=reason)
+    embed = Embed(
+        title=f'Usuario baneado ✅',
+        description=f'El usuario {member.name} ha sido baneado satisfactoriamente'
+    )
+    await ctx.send(embed=embed)
+
+
+@command(help='Permite un usuario en el servidor que anteriormente habia sido baneado', usage='unban <usuario> [<razón>]')
+async def unban(ctx, member: Optional[Member], reason=None):
+    await member.unban(reason=reason)
+    embed = Embed(
+        title=f'Usuario desbaneado ✅',
+        description=f'El usuario {member.name} ha sido desbaneado satisfactoriamente'
+    )
+    await ctx.send(embed=embed)
+
+
 def setup(bot):
     bot.add_command(hello)
     bot.add_command(clear)
     bot.add_command(info)
     bot.add_command(avatar)
+    bot.add_command(ban)
+    bot.add_command(unban)

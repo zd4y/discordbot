@@ -10,7 +10,7 @@ bot.remove_command('help')
 bot.load_extension('commands')
 
 
-@bot.command(help='Recarga algunos comandos del bot')
+@bot.command(help='Recarga algunos comandos del bot', usage='reload [<extención>]')
 @commands.check(Checks.is_admin)
 async def reload(ctx, *args):
     if args:
@@ -19,32 +19,43 @@ async def reload(ctx, *args):
     else:
         bot.reload_extension('commands')
     embed = Embed(
-        title='✅ Reloaded',
+        title='Reloaded ✅',
         color=Color.red(),
         description='Bot recargado satisfactoriamente!'
     )
     await ctx.send(embed=embed)
 
 
-@bot.command(help='Muestra ayuda acerca del bot', aliases=['ayuda', 'comandos', 'commands'])
-async def help(ctx):
-    embed = Embed(
-        title='Ayuda',
-        description=f'Prefix: {ctx.prefix}\n\nLista de comandos del bot:',
-        color=Color.red()
-    )
-    for cmd in bot.commands:
-        value = cmd.help
+@bot.command(help='Muestra ayuda acerca del bot', aliases=['ayuda', 'comandos', 'commands'], usage='help [<comando>]')
+async def help(ctx, command=None):
+    if command:
+        cmd = utils.get(bot.commands, name=command)
         if cmd.aliases:
             aliases = ', '.join(cmd.aliases)
-            value += f'\nAlias: {aliases}'
+        embed = Embed(
+            title=f'Ayuda sobre el comando {cmd.name}',
+            description=f'{cmd.help}\nAlias: {aliases}\nUso: {cmd.usage}'
+        )
+        await ctx.send(embed=embed)
+    else:
+        embed = Embed(
+            title='Ayuda',
+            description=f'Prefix: {ctx.prefix}\n\nLista de comandos del bot:',
+            color=Color.red()
+        )
+        for cmd in bot.commands:
+            value = cmd.help
+            if cmd.aliases:
+                aliases = ', '.join(cmd.aliases)
+                value += f'\nAlias: {aliases}'
+                value += f'\nUso: {ctx.prefix}{cmd.usage}'
 
-        embed.add_field(name=cmd.name, value=value, inline=False)
+            embed.add_field(name=cmd.name, value=value, inline=False)
 
-    await ctx.send(embed=embed)
+        await ctx.send(embed=embed)
 
 
-@bot.command(help='Muestra el prefix del bot o lo cambia, puedes usar múltiples prefixes pasando varios separados por espacios')
+@bot.command(help='Muestra el prefix del bot o lo cambia, puedes usar múltiples prefixes pasando varios separados por espacios', usage='prefix [<nuevos prefixes>]')
 @commands.check(Checks.can_manage_server)
 async def prefix(ctx, *args):
     if args:
@@ -53,7 +64,7 @@ async def prefix(ctx, *args):
         if isinstance(prefixes, list):
             prefixes = ', '.join(prefixes)
         embed = Embed(
-            title='✅ Prefix editado!',
+            title='Prefix editado! ✅',
             description=f'Los prefixes ahora son: {prefixes}',
             color=Color.red()
         )
@@ -74,7 +85,7 @@ async def prefix(ctx, *args):
 async def on_command_error(ctx, error):
     cmd = ctx.message.content.split()[0]
     embed = Embed(
-        title='Error :(',
+        title='Error ❌',
         color=Color.red()
     )
     if isinstance(error, commands.CommandNotFound):
