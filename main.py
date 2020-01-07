@@ -10,7 +10,7 @@ bot.remove_command('help')
 bot.load_extension('commands')
 
 
-@tasks.loop(minutes=10)
+@tasks.loop(minutes=2)
 async def youtube_notifier():
     URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
     playlist_id = 'UUvnoM0R1sDKm-YCPifEso_g'
