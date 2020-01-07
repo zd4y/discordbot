@@ -48,7 +48,7 @@ async def help(ctx, command=None):
             if cmd.aliases:
                 aliases = ', '.join(cmd.aliases)
                 value += f'\nAlias: {aliases}'
-                value += f'\nUso: `{ctx.prefix}{cmd.usage}`'
+            value += f'\nUso: `{ctx.prefix}{cmd.usage}`'
 
             embed.add_field(name=cmd.name, value=value, inline=False)
 
