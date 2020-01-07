@@ -5,11 +5,12 @@ import json
 load_dotenv()
 TOKEN = os.environ.get('DISCORD_TOKEN')
 YT_API_KEY = os.environ.get('YT_API_KEY')
+BASE_PATH = os.environ.get('DISCORDBOT_BASE_PATH') or '.'
 
 
 def get_prefix(bot, msg):
     guild_id = str(msg.guild.id)
-    with open('./config.json') as file:
+    with open(os.path.join(BASE_PATH, 'config.json')) as file:
         config = json.load(file)
     try:
         prefix = config[guild_id]['prefix']
@@ -20,7 +21,7 @@ def get_prefix(bot, msg):
 
 def set_prefix(msg, *args):
     guild_id = str(msg.guild.id)
-    with open('./config.json') as file:
+    with open(os.path.join(BASE_PATH, 'config.json')) as file:
         config = json.load(file)
     try:
         config[guild_id]
@@ -30,12 +31,12 @@ def set_prefix(msg, *args):
         config.pop(guild_id, None)
     else:
         config[guild_id]['prefix'] = list(args)
-    with open('./config.json', 'w') as file:
+    with open(os.path.join(BASE_PATH, 'config.json'), 'w') as file:
         json.dump(config, file, indent=2)
 
 
 def add_to_playlist_cache(playlist_id, video_id):
-    with open('./config.json') as file:
+    with open(os.path.join(BASE_PATH, 'config.json')) as file:
         config = json.load(file)
     yt_playlists = config['default'].get('yt playlists')
     if yt_playlists is None:
@@ -48,12 +49,12 @@ def add_to_playlist_cache(playlist_id, video_id):
         for _ in range(5):
             playlist_videos.pop()
     playlist_videos.append(video_id)
-    with open('./config.json', 'w') as file:
+    with open(os.path.join(BASE_PATH, 'config.json'), 'w') as file:
         json.dump(config, file, indent=2)
 
 
 def get_playlist_cache(playlist_id: str):
-    with open('./config.json') as file:
+    with open(os.path.join(BASE_PATH, 'config.json')) as file:
         config = json.load(file)
     try:
         videos = config['default']['yt playlists'][playlist_id]
@@ -64,20 +65,20 @@ def get_playlist_cache(playlist_id: str):
 
 
 def set_yt_notifier_channel(guild_id, channel_id):
-    with open('./config.json') as file:
+    with open(os.path.join(BASE_PATH, 'config.json')) as file:
         config = json.load(file)
     try:
         config[guild_id]
     except KeyError:
         config[guild_id] = {}
     config[guild_id]['yt notifier channel'] = channel_id
-    with open('./config.json', 'w') as file:
+    with open(os.path.join(BASE_PATH, 'config.json'), 'w') as file:
         json.dump(config, file, indent=2)
 
 
 def get_yt_notifier_channel(guild_id):
     guild_id = str(guild_id)
-    with open('./config.json') as file:
+    with open(os.path.join(BASE_PATH, 'config.json')) as file:
         config = json.load(file)
     try:
         notifier_channel = config[guild_id]['yt notifier channel']
