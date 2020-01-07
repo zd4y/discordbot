@@ -21,7 +21,7 @@ async def reload(ctx, *args):
     embed = Embed(
         title='✅ Reloaded',
         color=Color.red(),
-        description='Bot successfully reloaded!'
+        description='Bot recargado satisfactoriamente!'
     )
     await ctx.send(embed=embed)
 
