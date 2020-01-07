@@ -21,7 +21,7 @@ async def youtube_notifier():
         'key': YT_API_KEY
     }
     res = requests.get(URL, params=params)
-    videos = res.json()['items']
+    videos = res.json()['items'][::-1]
     for video in videos:
         if video not in get_playlist_cache(playlist_id):
             video_info = video['snippet']
