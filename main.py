@@ -34,7 +34,8 @@ async def help(ctx, command=None):
             aliases = ', '.join(cmd.aliases)
         embed = Embed(
             title=f'Ayuda sobre el comando {cmd.name}',
-            description=f'{cmd.help}\nAlias: {aliases}\nUso: `{cmd.usage}`'
+            description=f'{cmd.help}\nAlias: {aliases}\nUso: `{cmd.usage}`',
+            color=Color.red()
         )
         await ctx.send(embed=embed)
     else:
