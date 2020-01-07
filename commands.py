@@ -54,21 +54,34 @@ async def avatar(ctx, member: Optional[Member]):
 
 
 @command(help='Prohible un usuario en el servidor', usage='ban <usuario> [<razón>]')
-async def ban(ctx, member: Optional[Member], reason=None):
+async def ban(ctx, member: Member, reason: Optional[str]):
     await member.ban(reason=reason)
     embed = Embed(
         title=f'Usuario baneado ✅',
-        description=f'El usuario {member.name} ha sido baneado satisfactoriamente'
+        description=f'El usuario {member.name} ha sido baneado satisfactoriamente',
+        color=Color.red()
     )
     await ctx.send(embed=embed)
 
 
 @command(help='Permite un usuario en el servidor que anteriormente habia sido baneado', usage='unban <usuario> [<razón>]')
-async def unban(ctx, member: Optional[Member], reason=None):
+async def unban(ctx, member: Member, reason: Optional[str]):
     await member.unban(reason=reason)
     embed = Embed(
         title=f'Usuario desbaneado ✅',
-        description=f'El usuario {member.name} ha sido desbaneado satisfactoriamente'
+        description=f'El usuario {member.name} ha sido desbaneado satisfactoriamente',
+        color=Color.red()
+    )
+    await ctx.send(embed=embed)
+
+
+@command(help='Expulsa a un usuario del servidor', usage='kick <usuario> [<razón>]', aliases=['expulsar'])
+async def kick(ctx, member: Member, reason: Optional[str]):
+    await member.kick(reason=reason)
+    embed = Embed(
+        title=f'Usuario kickeado ✅',
+        description=f'El usuario {member.name} ha sido expulsado satisfactoriamente',
+        color=Color.red()
     )
     await ctx.send(embed=embed)
 
@@ -80,3 +93,4 @@ def setup(bot):
     bot.add_command(avatar)
     bot.add_command(ban)
     bot.add_command(unban)
+    bot.add_command(kick)
