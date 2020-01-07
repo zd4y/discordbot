@@ -89,7 +89,7 @@ async def on_command_error(ctx, error):
         title='Error',
         color=Color.red()
     )
-    embed.set_author('❌')
+    embed.set_author(name='❌')
     if isinstance(error, commands.CommandNotFound):
         embed.description = f'El comando `{cmd}` no existe.\nPuedes utilizar `{ctx.prefix}help` para ver una lista detallada de los comandos disponibles.'
     elif isinstance(error, commands.CheckFailure):
