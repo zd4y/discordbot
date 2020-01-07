@@ -195,7 +195,7 @@ async def on_ready():
     activity = Game('default prefix: !')
     await bot.change_presence(activity=activity)
     print('Bot is ready.')
-    youtube_notifier.start()
+    # youtube_notifier.start()
 
 
 bot.run(TOKEN)
