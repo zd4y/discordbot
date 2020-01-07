@@ -3,6 +3,7 @@ from discord import Color, Embed, utils, Game
 from config import TOKEN, get_prefix, set_prefix
 from util import Checks
 
+
 bot = commands.Bot(command_prefix=get_prefix)
 bot.remove_command('help')
 
