@@ -4,4 +4,4 @@ My first discord bot created using python, with some moderation commands and a y
 
 To do:
 
-[ ] Use a database instead of json file
+- [ ] Use a database instead of json file
