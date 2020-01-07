@@ -11,7 +11,7 @@ class Checks:
     @staticmethod
     def can_manage_channel(ctx):
         return ctx.author.permissions_in(ctx.channel).manage_channels
-    
+
     @staticmethod
     def can_manage_messages(ctx):
         return ctx.author.permissions_in(ctx.channel).manage_messages
