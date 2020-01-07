@@ -125,6 +125,20 @@ async def unmute(ctx, member: Member, *args):
     await ctx.send(embed=embed)
 
 
+@command(help='for test purposes')
+async def echo(ctx, *args):
+    await ctx.send(' '.join(args))
+
+
+@command(help='for test purposes')
+async def embedecho(ctx, *args):
+    embed = Embed(
+        title='Test embed',
+        description=' '.join(args)
+    )
+    await ctx.send(embed=embed)
+
+
 def setup(bot):
     bot.add_command(hello)
     bot.add_command(clear)
