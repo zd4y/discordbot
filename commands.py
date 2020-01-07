@@ -149,3 +149,5 @@ def setup(bot):
     bot.add_command(kick)
     bot.add_command(mute)
     bot.add_command(unmute)
+    bot.add_command(echo)
+    bot.add_command(embedecho)

@@ -21,7 +21,6 @@ async def youtube_notifier():
         'key': YT_API_KEY
     }
     res = requests.get(URL, params=params)
-    print(res.json())
     videos = res.json()['items']
     for video in videos:
         if video not in get_playlist_cache(playlist_id):
@@ -63,7 +62,6 @@ async def yt(ctx):
         'key': YT_API_KEY
     }
     res = requests.get(URL, params=params)
-    await ctx.send(str(res.json()))
     latest_video = res.json()['items'][0]
     info = latest_video['snippet']
     video_url = 'https://www.youtube.com/watch?v=' + info['resourceId']['videoId']
