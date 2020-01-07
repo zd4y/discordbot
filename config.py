@@ -48,7 +48,8 @@ def add_to_playlist_cache(playlist_id, video_id):
     if len(playlist_videos) > 10:
         for _ in range(5):
             playlist_videos.pop()
-    playlist_videos.append(video_id)
+    if video_id not in playlist_videos:
+        playlist_videos.append(video_id)
     with open(os.path.join(BASE_PATH, 'config.json'), 'w') as file:
         json.dump(config, file, indent=2)
 

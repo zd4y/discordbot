@@ -24,9 +24,9 @@ async def youtube_notifier():
     videos = res.json()['items'][::-1]
     for video in videos:
         playlist_cache = get_playlist_cache(playlist_id)
-        if len(playlist_cache) > 0 and video not in playlist_cache:
-            video_info = video['snippet']
-            video_id = video_info['resourceId']['videoId']
+        video_info = video['snippet']
+        video_id = video_info['resourceId']['videoId']
+        if len(playlist_cache) > 0 and (video_id not in playlist_cache):
             video_url = 'https://www.youtube.com/watch?v=' + video_info['resourceId']['videoId']
             video_desc = video_info['description'][:151] + '...'
             embed = Embed(
