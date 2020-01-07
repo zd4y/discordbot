@@ -4,6 +4,7 @@ import json
 
 load_dotenv()
 TOKEN = os.environ.get('DISCORD_TOKEN')
+YT_API_KEY = os.environ.get('YT_API_KEY')
 
 
 def get_prefix(bot, msg):
@@ -31,3 +32,61 @@ def set_prefix(msg, *args):
         config[guild_id]['prefix'] = list(args)
     with open('config.json', 'w') as file:
         json.dump(config, file, indent=2)
+
+
+def add_to_playlist_cache(playlist_id, video_id):
+    with open('config.json') as file:
+        config = json.load(file)
+    yt_playlists = config['default'].get('yt playlists')
+    if yt_playlists is None:
+        config['default']['yt playlists'] = dict()
+    playlist_videos = config['default']['yt playlists'].get(playlist_id)
+    if playlist_videos is None:
+        config['default']['yt playlists'][playlist_id] = list()
+    playlist_videos = config['default']['yt playlists'].get(playlist_id)
+    if len(playlist_videos) > 10:
+        for _ in range(5):
+            playlist_videos.pop()
+    playlist_videos.append(video_id)
+    with open('config.json', 'w') as file:
+        json.dump(config, file, indent=2)
+
+
+def get_playlist_cache(playlist_id: str):
+    with open('config.json') as file:
+        config = json.load(file)
+    try:
+        videos = config['default']['yt playlists'][playlist_id]
+    except:
+        return list()
+    else:
+        return videos
+
+
+def set_yt_notifier_channel(guild_id, channel_id):
+    with open('config.json') as file:
+        config = json.load(file)
+    try:
+        config[guild_id]
+    except KeyError:
+        config[guild_id] = {}
+    config[guild_id]['yt notifier channel'] = channel_id
+    with open('config.json', 'w') as file:
+        json.dump(config, file, indent=2)
+
+
+def get_yt_notifier_channel(guild_id):
+    guild_id = str(guild_id)
+    with open('config.json') as file:
+        config = json.load(file)
+    try:
+        notifier_channel = config[guild_id]['yt notifier channel']
+    except KeyError:
+        return None
+    else:
+        return notifier_channel
+
+
+if __name__ == "__main__":
+    print(get_yt_notifier_channel('663834937606012962'))
+    print(get_playlist_cache('UUvnoM0R1sDKm-YCPifEso_g'))

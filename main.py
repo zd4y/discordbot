@@ -1,12 +1,79 @@
-from discord.ext import commands
-from discord import Color, Embed, utils, Game, Forbidden
-from config import TOKEN, get_prefix, set_prefix
+from discord.ext import commands, tasks
+from discord import Color, Embed, utils, Game, Forbidden, TextChannel
+from config import TOKEN, get_prefix, set_prefix, YT_API_KEY, get_playlist_cache, add_to_playlist_cache, get_yt_notifier_channel, set_yt_notifier_channel
+import requests
 
 
 bot = commands.Bot(command_prefix=get_prefix)
 bot.remove_command('help')
 
 bot.load_extension('commands')
+
+
+@tasks.loop(minutes=10)
+async def youtube_notifier():
+    URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
+    playlist_id = 'UUvnoM0R1sDKm-YCPifEso_g'
+    params = {
+        'part': 'snippet,contentDetails',
+        'maxResults': 5,
+        'playlistId': playlist_id,
+        'key': YT_API_KEY
+    }
+    res = requests.get(URL, params=params)
+    videos = res.json()['items']
+    for video in videos:
+        if video not in get_playlist_cache(playlist_id):
+            video_info = video['snippet']
+            video_id = video_info['resourceId']['videoId']
+            video_url = 'https://www.youtube.com/watch?v=' + video_info['resourceId']['videoId']
+            video_desc = video_info['description'][:151] + '...'
+            embed = Embed(
+                title=video_info['title'],
+                description=video_desc,
+                url=video_url,
+                color=Color.red()
+            )
+            embed.description += f'\n{video_url}'
+            embed.set_image(url=video_info['thumbnails']['medium']['url'])
+            for guild in bot.guilds:
+                channel = utils.get(bot.get_all_channels(), id=get_yt_notifier_channel(guild.id))
+                await channel.send(embed=embed)
+            add_to_playlist_cache(playlist_id, video_id)
+
+
+@bot.command(help='Coloca el canal al cual se enviaran las novedades (nuevos videos canal de YT Absolute)', usage='ytchannel <canal>')
+async def ytchannel(ctx, channel: TextChannel):
+    set_yt_notifier_channel(ctx.guild.id, channel.id)
+    embed = Embed(
+        title='Canal colocado! ✅',
+        description='El canal para las novedades ha sido colocado satisfactoriamente.'
+    )
+    await ctx.send(embed=embed)
+
+
+@bot.command(help='Muestra el último video subido al canal de Absolute', aliases=['ultimo', 'youtube', 'latest'], usage='yt')
+async def yt(ctx):
+    URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
+    params = {
+        'part': 'snippet,contentDetails',
+        'maxResults': 25,
+        'playlistId': 'UUvnoM0R1sDKm-YCPifEso_g',
+        'key': YT_API_KEY
+    }
+    res = requests.get(URL, params=params)
+    latest_video = res.json()['items'][0]
+    info = latest_video['snippet']
+    video_url = 'https://www.youtube.com/watch?v=' + info['resourceId']['videoId']
+    embed = Embed(
+        title=info['title'],
+        description=info['description'],
+        url=video_url,
+        color=Color.red()
+    )
+    embed.description += f'\n{video_url}'
+    embed.set_image(url=info['thumbnails']['medium']['url'])
+    await ctx.send(embed=embed)
 
 
 @bot.command(help='Recarga algunos comandos del bot', usage='reload [<extención>]')
@@ -124,6 +191,7 @@ async def on_ready():
     activity = Game('default prefix: !')
     await bot.change_presence(activity=activity)
     print('Bot is ready.')
+    youtube_notifier.start()
 
 
 bot.run(TOKEN)

@@ -1,5 +1,17 @@
 {
   "default": {
-    "prefix": "!"
+    "prefix": "!",
+    "yt playlists": {
+      "UUvnoM0R1sDKm-YCPifEso_g": [
+        "zPKylS8ifuI",
+        "dMbr_iu-TPg",
+        "k24J92Hod50",
+        "5e9UVTDNsXY",
+        "cuFSVjo9oi0"
+      ]
+    }
+  },
+  "663834937606012962": {
+    "yt notifier channel": 664165116815736863
   }
 }
