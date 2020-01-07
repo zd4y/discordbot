@@ -23,7 +23,8 @@ async def youtube_notifier():
     res = requests.get(URL, params=params)
     videos = res.json()['items'][::-1]
     for video in videos:
-        if video not in get_playlist_cache(playlist_id):
+        playlist_cache = get_playlist_cache(playlist_id)
+        if len(playlist_cache) > 0 and video not in playlist_cache:
             video_info = video['snippet']
             video_id = video_info['resourceId']['videoId']
             video_url = 'https://www.youtube.com/watch?v=' + video_info['resourceId']['videoId']
@@ -40,6 +41,9 @@ async def youtube_notifier():
                 channel = utils.get(bot.get_all_channels(), id=get_yt_notifier_channel(guild.id))
                 await channel.send(embed=embed)
             add_to_playlist_cache(playlist_id, video_id)
+        else:
+            add_to_playlist_cache(playlist_id, video_id)
+
 
 
 @bot.command(help='Coloca el canal al cual se enviaran las novedades (nuevos videos canal de YT Absolute)', usage='ytchannel <canal>')
