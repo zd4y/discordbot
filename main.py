@@ -1,5 +1,5 @@
 from discord.ext import commands
-from discord import Color, Embed, utils, Game
+from discord import Color, Embed, utils, Game, Forbidden
 from config import TOKEN, get_prefix, set_prefix
 from util import Checks
 
@@ -86,13 +86,16 @@ async def prefix(ctx, *args):
 async def on_command_error(ctx, error):
     cmd = ctx.message.content.split()[0]
     embed = Embed(
-        title='Error ❌',
+        title='Error',
         color=Color.red()
     )
+    embed.set_thumbnail(url='❌')
     if isinstance(error, commands.CommandNotFound):
         embed.description = f'El comando `{cmd}` no existe.\nPuedes utilizar `{ctx.prefix}help` para ver una lista detallada de los comandos disponibles.'
     elif isinstance(error, commands.CheckFailure):
         embed.description = f'No tienes permisos suficientes para usar ese comando.'
+    elif isinstance(error, Forbidden):
+        embed.description = f'El bot no tiene permisos suficientes para realizar esa acción'
     else:
         embed.description = 'Error desconocido'
         print(error)
