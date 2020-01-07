@@ -6,7 +6,7 @@ To do:
 
 - [ ] Use a database instead of a json file
 
-## Usage
+## Setup/Usage
 
 ### Requirements
 
