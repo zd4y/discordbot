@@ -177,6 +177,8 @@ class BotConfigCmds(commands.Cog):
                 res = requests.get(URL, params=params)
                 channel_title = res.json()['items'][0]['snippet']['channelTitle']
                 value += f'\n- {playlist_id} (Videos de {channel_title})'
+        else:
+            value += '\nActualmente no sigues ninguna playlist ni canal'
         embed.add_field(name='Configuraciones Actuales', value=value)
         await ctx.send(embed=embed)
 
