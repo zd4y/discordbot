@@ -64,6 +64,10 @@ class Loops(commands.Cog):
     @tasks.loop(minutes=5)
     async def youtube_notifier(self):
         for guild in self.bot.guilds:
+            channel_id = ServerConfig.get_setting(guild.id, 'notifications_channel')
+            channel = discord.utils.get(guild.channels, id=channel_id)
+            if channel is None:
+                continue
             followed_playlists = ServerConfig.get_setting(guild.id, 'followed_playlists')
             if followed_playlists is None:
                 continue
@@ -82,7 +86,6 @@ class Loops(commands.Cog):
                     video_info = video['snippet']
                     video_id = video_info['resourceId']['videoId']
                     if video_id in video_cache:
-                        YoutubeVideos.add_videos(playlist_id, [video_id])
                         continue
                     video_url = 'https://www.youtube.com/watch?v=' + video_info['resourceId']['videoId']
                     video_desc = video_info['description'][:151] + '...'
@@ -94,8 +97,6 @@ class Loops(commands.Cog):
                     )
                     embed.description += f'\n{video_url}'
                     embed.set_image(url=video_info['thumbnails']['medium']['url'])
-                    channel_id = ServerConfig.get_setting(guild.id, 'notifications_channel')
-                    channel = discord.utils.get(guild.channels, id=channel_id)
                     await channel.send(embed=embed)
                     YoutubeVideos.add_videos(playlist_id, [video_id])
 
@@ -105,20 +106,23 @@ class BotConfigCmds(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.group(help='Configura el bot')
+    def cog_check(self, ctx):
+        return ('manage_guild', True) in ctx.author.permissions_in(ctx.channel)
+
+    @commands.group(help='Configura el bot', invoke_without_command=True)
     async def config(self, ctx):
         # TODO Display a message showing what can be done with this command
         pass
 
     @config.command(
         help='Muestra el prefix del bot o lo cambia, puedes cambiarlo a múltiples prefixes pasando varios argumentos separados por un espacio',
-        usage='prefix [<nuevos prefixes>]'
+        usage='[nuevos prefixes]'
     )
     @commands.has_permissions(manage_guild=True)
     async def prefix(self, ctx, *args):
         if args:
-            ServerConfig.set_setting(ctx.guild.id, 'prefix', ','.join(args))
-            prefixes = '\', \''.join(args)
+            ServerConfig.set_setting(ctx.guild.id, 'prefix', ' '.join(args))
+            prefixes = ' '.join(args)
             embed = discord.Embed(
                 title='Prefix editado! ✅',
                 description=f'Los prefixes ahora son: {prefixes}',
@@ -128,7 +132,7 @@ class BotConfigCmds(commands.Cog):
         else:
             prefixes = self.bot.command_prefix(self.bot, ctx.message)
             if isinstance(prefixes, list):
-                prefixes = ', '.join(prefixes)
+                prefixes = ' '.join(prefixes)
             embed = discord.Embed(
                 title='Prefix del Bot',
                 description=f'Los prefixes actuales son: {prefixes}',
@@ -136,12 +140,46 @@ class BotConfigCmds(commands.Cog):
             )
             await ctx.send(embed=embed)
 
-    @config.group(help='Configuración sobre las noticiaciones de youtube', aliases=['youtube'])
+    @config.group(help='Configuración sobre las noticiaciones de youtube', aliases=['youtube'], invoke_without_command=True)
     async def yt(self, ctx):
+        embed = discord.Embed(
+            title='Configuración de YT Notifier',
+            color=discord.Color.red()
+        )
+        embed.add_field(
+            name='Canal', value=f'Puedes configurar el canal de texto al cual se enviaran las notificaciones usando `{ctx.prefix}config yt set channel #canal`', inline=False)
+        embed.add_field(name='Seguir un canal de YouTube',
+                        value=f'Para seguir un canal de youtube y recibir notificaciones de sus nuevos videos, usa `{ctx.prefix}config yt add channel <canal>`. Para más información usa `{ctx.prefix}help config yt add channel`\n\nTambién puedes usar `{ctx.prefix}config yt remove playlist <playlist_id>` para eliminar un canal (Puedes ver la id de las playlists más abajo)\n\u200b', inline=False)
+
+        notifications_channel = ServerConfig.get_setting(ctx.guild.id, 'notifications_channel')
+        if notifications_channel is None:
+            notifications_channel = 'Ninguno'
+        else:
+            notifications_channel = discord.utils.get(ctx.guild.channels, id=int(notifications_channel)).mention
+        value = f'El canal para notificaciones es: {notifications_channel}'
+        followed_playlists = ServerConfig.get_setting(ctx.guild.id, 'followed_playlists').split()
+        if followed_playlists:
+            value += '\nLa id de las playlists seguidas son:'
+            for playlist_id in followed_playlists:
+                URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
+                params = {
+                    'part': 'snippet',
+                    'maxResults': '1',
+                    'playlistId': playlist_id,
+                    'key': Config.YOUTUBE_API_KEY
+                }
+                res = requests.get(URL, params=params)
+                channel_title = res.json()['items'][0]['snippet']['channelTitle']
+                value += f'\n- {playlist_id} (Videos de {channel_title})'
+        embed.add_field(name='Configuraciones Actuales', value=value)
+        await ctx.send(embed=embed)
+
+    @yt.group(name='set', invoke_without_command=True)
+    async def set_(self, ctx):
         # TODO Display a message showing what can be done with this command
         pass
 
-    @yt.command(help='Coloca el canal al cual se enviaran las novedades (nuevos videos canal de YouTube, Absolute)')
+    @set_.command(help='Coloca el canal al cual se enviaran las novedades (nuevos videos canal de YouTube, Absolute)')
     async def channel(self, ctx, channel: discord.TextChannel):
         ServerConfig.set_setting(ctx.guild.id, 'notifications_channel', channel.id)
         embed = discord.Embed(
@@ -151,14 +189,77 @@ class BotConfigCmds(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @commands.command(help='Recarga el bot', usage='reload [<extención>]')
+    @yt.group(invoke_without_command=True)
+    async def add(self, ctk):
+        # TODO Display a message showing what can be done with this command
+        pass
+
+    @add.command(name='channel')
+    async def channel_(self, ctx, yt_channel):
+        pattern = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+        is_url = bool(pattern.search(yt_channel))
+        if is_url:
+            channel_id = yt_channel.split('/')[-1]
+        else:
+            URL = 'https://www.googleapis.com/youtube/v3/search'
+            params = {
+                'part': 'snippet',
+                'type': 'channel',
+                'maxResults': 1,
+                'q': yt_channel,
+                'key': Config.YOUTUBE_API_KEY
+            }
+            res = requests.get(URL, params=params)
+            channel_id = res.json()['items'][0]['snippet']['channelId']
+
+        URL = 'https://www.googleapis.com/youtube/v3/channels'
+        params = {
+            'part': 'snippet,contentDetails',
+            'id': channel_id,
+            'key': Config.YOUTUBE_API_KEY
+        }
+        res = requests.get(URL, params=params)
+        channel = res.json()['items'][0]
+        channel_playlist = channel['contentDetails']['relatedPlaylists']['uploads']
+        followed_playlists = ServerConfig.get_setting(ctx.guild.id, 'followed_playlists').split()
+        followed_playlists.append(channel_playlist)
+        ServerConfig.set_setting(ctx.guild.id, 'followed_playlists', ' '.join(followed_playlists))
+
+        channel_info = channel['snippet']
+        channel_title = channel_info['title']
+        embed = discord.Embed(
+            title='Canal Agregado! ✅',
+            description=f'El canal {channel_title} ha sido agregado correctamente!',
+            color=discord.Color.red()
+        )
+        embed.set_thumbnail(url=channel_info['thumbnails']['default']['url'])
+        await ctx.send(embed=embed)
+
+    @yt.group(invoke_without_command=True)
+    async def remove(self, ctx):
+        # TODO Show a message
+        pass
+
+    @remove.command()
+    async def playlist(self, ctx, playlist_id):
+        followed_playlists = ServerConfig.get_setting(ctx.guild.id, 'followed_playlists').split()
+        followed_playlists.remove(playlist_id)
+        ServerConfig.set_setting(ctx.guild.id, 'followed_playlists', ' '.join(followed_playlists))
+        embed = discord.Embed(
+            title='Playlist eliminada! ✅',
+            description='La playlist ha sido eliminada correctamente.',
+            color=discord.Color.red()
+        )
+        await ctx.send(embed=embed)
+
+    @commands.command(help='Recarga el bot', usage='[extención]')
     async def reload(self, ctx, *args):
         if args:
             for arg in args:
                 self.bot.reload_extension(arg)
         else:
             # TODO Si hay mas extensiones en el futuro hay que agregarlas.
-            self.bot.reload_extension('.commands')
+            self.bot.reload_extension('commands')
         embed = discord.Embed(
             title='Reloaded ✅',
             color=discord.Color.red(),
@@ -171,18 +272,18 @@ class ModerationCmds(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.command(help='Elimina los últimos <cantidad> mensajes o el último si ningún argumento es usado.', usage='clear [<cantidad>]')
+    @commands.command(help='Elimina los últimos <cantidad> mensajes o el último si ningún argumento es usado.', usage='[cantidad]')
     @commands.has_permissions(manage_messages=True)
     async def clear(self, ctx, amount=1):
         await ctx.channel.purge(limit=amount)
         embed = discord.Embed(
             title='Mensajes eliminados! ✅',
-            description=f'{amount} mensajes han sido eliminados satisfactoriamente',
+            description=f'{amount} mensajes han sido eliminados satisfactoriamente\nEste mensaje va a ser eliminado en 5 segundos',
             color=discord.Color.red()
         )
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, delete_after=5)
 
-    @commands.command(help='Prohible un usuario en el servidor', usage='ban <usuario> [<razón>]')
+    @commands.command(help='Prohible un usuario en el servidor', usage='<usuario> [razón]')
     @commands.has_permissions(ban_members=True)
     async def ban(self, ctx, member: discord.Member, *args: str):
         reason = ' '.join(args) or None
@@ -196,7 +297,7 @@ class ModerationCmds(commands.Cog):
             embed.description += f'\nRazón: {reason}'
         await ctx.send(embed=embed)
 
-    @commands.command(help='Permite un usuario en el servidor que anteriormente habia sido baneado', usage='unban <usuario> [<razón>]')
+    @commands.command(help='Permite un usuario en el servidor que anteriormente habia sido baneado', usage='<usuario> [razón]')
     @commands.has_permissions(ban_members=True)
     async def unban(self, ctx, member: discord.Member, *args: str):
         reason = ' '.join(args) or None
@@ -210,7 +311,7 @@ class ModerationCmds(commands.Cog):
             embed.description += f'\nRazón: {reason}'
         await ctx.send(embed=embed)
 
-    @commands.command(help='Expulsa a un usuario del servidor', usage='kick <usuario> [<razón>]', aliases=['expulsar'])
+    @commands.command(help='Expulsa a un usuario del servidor', usage='<usuario> [razón]', aliases=['expulsar'])
     @commands.has_permissions(kick_members=True)
     async def kick(self, ctx, member: discord.Member, *args: str):
         reason = ' '.join(args) or None
@@ -224,7 +325,7 @@ class ModerationCmds(commands.Cog):
             embed.description += f'\nRazón: {reason}'
         await ctx.send(embed=embed)
 
-    @commands.command(help='Evita que un usuario envie mensajes o entre a canales de voz', usage='mute <usuario> [<razón>]')
+    @commands.command(help='Evita que un usuario envie mensajes o entre a canales de voz', usage='<usuario> [razón]')
     @commands.has_permissions(manage_messages=True)
     async def mute(self, ctx, member: discord.Member, *args):
         role = discord.utils.get(ctx.guild.roles, name='Muted')
@@ -243,7 +344,7 @@ class ModerationCmds(commands.Cog):
             embed.description += f'\nRazón: {reason}'
         await ctx.send(embed=embed)
 
-    @commands.command(help='Permite a un usuario silenciado hablar y escribir nuevamente', usage='unmute <usuario> [<razón>]')
+    @commands.command(help='Permite a un usuario silenciado hablar y escribir nuevamente', usage='<usuario> [razón]')
     @commands.has_permissions(manage_messages=True)
     async def unmute(self, ctx, member: discord.Member, *args):
         role = discord.utils.get(ctx.guild.roles, name='Muted')
@@ -263,8 +364,8 @@ class UserCmds(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.command(help='Muestra ayuda acerca del bot', aliases=['ayuda', 'comandos', 'commands'], usage='help [<comando>]')
-    async def help(self, ctx, command: Optional[commands.Command]):
+    @commands.command(help='Muestra ayuda acerca del bot', aliases=['ayuda', 'comandos', 'commands'], usage='[comando]')
+    async def help2(self, ctx, command: Optional[commands.Command]):
         if command:
             embed = discord.Embed(
                 title=f'Ayuda sobre el comando {command.name}',
@@ -301,7 +402,7 @@ class UserCmds(commands.Cog):
     @commands.command(
         help='Muestra el último video subido al canal <canal> o al de Absolute si ningun argumento es pasado.' +
         '\n<canal> puede ser la url o el nombre de un canal de youtube', aliases=['ultimo', 'youtube', 'latest'],
-        usage='yt [<canal>]'
+        usage='[canal]'
     )
     async def yt(self, ctx, yt_channel=None):
         if yt_channel is None:
@@ -340,19 +441,10 @@ class UserCmds(commands.Cog):
         }
         res = requests.get(URL, params=params)
         latest_video = res.json()['items'][0]
-        info = latest_video['snippet']
-        video_url = 'https://www.youtube.com/watch?v=' + info['resourceId']['videoId']
-        embed = discord.Embed(
-            title=info['title'],
-            description=info['description'],
-            url=video_url,
-            color=discord.Color.red()
-        )
-        embed.description += f'\n{video_url}'
-        embed.set_image(url=info['thumbnails']['medium']['url'])
-        await ctx.send(embed=embed)
+        video_url = 'https://www.youtube.com/watch?v=' + latest_video['snippet']['resourceId']['videoId']
+        await ctx.send(video_url)
 
-    @commands.command(help='Saluda al usuario que usó el comando o al mencionado', aliases=['hola'], usage='hello [<usuario>]')
+    @commands.command(help='Saluda al usuario que usó el comando o al mencionado', aliases=['hola'], usage='[usuario]')
     async def hello(self, ctx, member: Optional[discord.Member]):
         member = member or ctx.author
         embed = discord.Embed(
@@ -361,7 +453,7 @@ class UserCmds(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    @commands.command(help='Información sobre el servidor', usage='info')
+    @commands.command(help='Información sobre el servidor')
     async def info(self, ctx: commands.Context):
         embed = discord.Embed(
             title='Información acerca del Servidor',
@@ -378,7 +470,7 @@ class UserCmds(commands.Cog):
         embed.add_field(name='(UTC) Creado el día', value=guild.created_at, inline=False)
         await ctx.send(embed=embed)
 
-    @commands.command(help='Muestra la foto de un usuario en un tamaño grande', aliases=['image', 'photo', 'foto', 'imagen'], usage='avatar [<usuario>]')
+    @commands.command(help='Muestra la foto de un usuario en un tamaño grande', aliases=['image', 'photo', 'foto', 'imagen'], usage='[usuario]')
     async def avatar(self, ctx, member: Optional[discord.Member]):
         member = member or ctx.author
         embed = discord.Embed(

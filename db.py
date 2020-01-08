@@ -19,7 +19,7 @@ class Setting(Base):
     __tablename__ = 'settings'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False, unique=True)
+    name = Column(String(50), nullable=False)
     value = Column(String(50), nullable=False)
     guild_id = Column(Integer, ForeignKey('guilds.id'))
 

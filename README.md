@@ -39,6 +39,15 @@ export YOUTUBE_API_KEY={Your project's youtube api key here}
 BOT_ENV=development/production
 ```
 
+### Creating the databases
+
+Run the python interpreter in the same folder and enter the following:
+
+```python
+>>> import db
+>>> db.create_all()
+```
+
 ---
 
 Then run main.py:

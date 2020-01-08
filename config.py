@@ -31,14 +31,20 @@ class ServerConfig:
                     return setting.value
         return cls.get_default_setting(name)
 
-    @staticmethod
-    def set_setting(guild_id: int, name: str, value: str):
+    @classmethod
+    def set_setting(cls, guild_id: int, name: str, value: str):
         guild = db.session.query(db.Guild).filter_by(id=guild_id).first()
         if guild is None:
             guild = db.Guild(id=guild_id)
             db.session.add(guild)
-        setting = db.Setting(name=name, value=value, guild=guild)
-        db.session.add(setting)
+        already_existed = False
+        for setting in guild.settings:
+            if setting.name == name:
+                setting.value = value
+                already_existed = True
+        if already_existed is False:
+            setting = db.Setting(name=name, value=value, guild=guild)
+            db.session.add(setting)
         db.session.commit()
 
 

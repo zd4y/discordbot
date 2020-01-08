@@ -1,10 +1,12 @@
 from discord.ext import commands
-from config import Config
+from config import Config, ServerConfig
 
 
-# TODO Get command prefix from guild config
-bot = commands.Bot(command_prefix='!')
-bot.remove_command('help')
+def get_prefix(bot, msg):
+    return ServerConfig.get_setting(msg.guild.id, 'prefix').split()
+
+
+bot = commands.Bot(command_prefix=get_prefix)
 
 bot.load_extension('commands')
 
