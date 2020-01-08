@@ -61,8 +61,12 @@ class Loops(commands.Cog):
         self.bot = bot
         self.youtube_notifier.start()
 
+    def cog_unload(self):
+        self.youtube_notifier.cancel()
+
     @tasks.loop(minutes=5)
     async def youtube_notifier(self):
+        print('INFO: starting yt notifier')
         for guild in self.bot.guilds:
             channel_id = ServerConfig.get_setting(guild.id, 'notifications_channel')
             channel = discord.utils.get(guild.channels, id=channel_id)
