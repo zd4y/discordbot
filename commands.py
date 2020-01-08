@@ -106,6 +106,7 @@ class Loops(commands.Cog):
 
 
 # TODO Put the help and aliases in the commands here
+# TODO Config debug true/false command
 class BotConfigCmds(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -161,8 +162,9 @@ class BotConfigCmds(commands.Cog):
         else:
             notifications_channel = discord.utils.get(ctx.guild.channels, id=int(notifications_channel)).mention
         value = f'El canal para notificaciones es: {notifications_channel}'
-        followed_playlists = ServerConfig.get_setting(ctx.guild.id, 'followed_playlists').split()
+        followed_playlists = ServerConfig.get_setting(ctx.guild.id, 'followed_playlists')
         if followed_playlists:
+            followed_playlists = followed_playlists.split()
             value += '\nLa id de las playlists seguidas son:'
             for playlist_id in followed_playlists:
                 URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
@@ -225,7 +227,11 @@ class BotConfigCmds(commands.Cog):
         res = requests.get(URL, params=params)
         channel = res.json()['items'][0]
         channel_playlist = channel['contentDetails']['relatedPlaylists']['uploads']
-        followed_playlists = ServerConfig.get_setting(ctx.guild.id, 'followed_playlists').split()
+        followed_playlists = ServerConfig.get_setting(ctx.guild.id, 'followed_playlists')
+        if followed_playlists:
+            followed_playlists = followed_playlists.split()
+        else:
+            followed_playlists = []
         followed_playlists.append(channel_playlist)
         ServerConfig.set_setting(ctx.guild.id, 'followed_playlists', ' '.join(followed_playlists))
 
@@ -246,7 +252,11 @@ class BotConfigCmds(commands.Cog):
 
     @remove.command()
     async def playlist(self, ctx, playlist_id):
-        followed_playlists = ServerConfig.get_setting(ctx.guild.id, 'followed_playlists').split()
+        followed_playlists = ServerConfig.get_setting(ctx.guild.id, 'followed_playlists')
+        if followed_playlists:
+            followed_playlists = followed_playlists.split()
+        else:
+            followed_playlists = []
         followed_playlists.remove(playlist_id)
         ServerConfig.set_setting(ctx.guild.id, 'followed_playlists', ' '.join(followed_playlists))
         embed = discord.Embed(
