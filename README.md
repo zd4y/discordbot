@@ -21,11 +21,13 @@ Create a .env file in the same folder where the `main.py` file is located and ad
 DISCORD_TOKEN={Your bot's discord token here}
 YOUTUBE_API_KEY={Your project's youtube api key here}
 BOT_ENV=development/production
+DATABASE_URI={your database's URI, used by SQLAlchemy for the connection}
 ```
 
 Replace the text between the brackets with the actual tokens, you have to get those from discord and from google.
 
 > Note: The Youtube API Key is only required if you want the notifier to work.
+> Note: If you have BOT_ENV=development, the DATABASE_URI will not be used, instead it will use an sqlite file named 'guilds.db'
 
 Alternatively, add the environment variables with export from your terminal:
 
@@ -33,6 +35,7 @@ Alternatively, add the environment variables with export from your terminal:
 export DISCORD_TOKEN={Your bot's discord token here}
 export YOUTUBE_API_KEY={Your project's youtube api key here}
 export BOT_ENV=development/production
+export DATABASE_URI={your database's URI, used by SQLAlchemy for the connection}
 ```
 
 ### Creating the databases
