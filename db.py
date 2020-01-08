@@ -3,6 +3,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
+from config import Config
+
+if Config.BOT_ENV == 'development':
+    engine_uri = 'sqlite:///guilds.db'
+else:
+    engine_uri = Config.DATABASE_URI
 
 engine = create_engine('sqlite:///guilds.db', echo=False)
 Base = declarative_base()

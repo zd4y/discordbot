@@ -10,6 +10,7 @@ class Config:
     DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
     YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY')
     BOT_ENV = os.environ.get('BOT_ENV').lower()  # This can be either development or production
+    DATABASE_URI = os.environ.get('DATABASE_URI')
 
 
 class ServerConfig:

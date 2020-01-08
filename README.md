@@ -26,7 +26,6 @@ BOT_ENV=development/production
 Replace the text between the brackets with the actual tokens, you have to get those from discord and from google.
 
 > Note: The Youtube API Key is only required if you want the notifier to work.
-> Note: Right now BOT_ENV does nothing, but it will be used in the future.
 
 Alternatively, add the environment variables with export from your terminal:
 
