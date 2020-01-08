@@ -2,7 +2,7 @@ import os
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, BigInteger
 from sqlalchemy.orm import relationship
 
 
@@ -15,7 +15,7 @@ Base = declarative_base()
 class Guild(Base):
     __tablename__ = 'guilds'
 
-    id = Column(Integer, primary_key=True, autoincrement=False)
+    id = Column(BigInteger, primary_key=True, autoincrement=False)
     settings = relationship('Setting', backref='guild')
 
 
@@ -25,7 +25,7 @@ class Setting(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(50), nullable=False)
     value = Column(String(50), nullable=False)
-    guild_id = Column(Integer, ForeignKey('guilds.id'))
+    guild_id = Column(BigInteger, ForeignKey('guilds.id'))
 
 
 class YoutubePlaylist(Base):
