@@ -1,16 +1,14 @@
+import os
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
-from config import Config
 
-if Config.BOT_ENV == 'development':
-    engine_uri = 'sqlite:///guilds.db'
-else:
-    engine_uri = Config.DATABASE_URI
 
-engine = create_engine('sqlite:///guilds.db', echo=False)
+DATABASE_URI = os.environ.get('DATABASE_URI') or 'sqlite:///guilds.db'
+
+engine = create_engine(DATABASE_URI, echo=False)
 Base = declarative_base()
 
 
