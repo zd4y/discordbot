@@ -1,94 +1,65 @@
-from dotenv import load_dotenv
 import os
-import json
+import db
 
-load_dotenv()
-TOKEN = os.environ.get('DISCORD_TOKEN')
-YT_API_KEY = os.environ.get('YT_API_KEY')
-BASE_PATH = os.environ.get('DISCORDBOT_BASE_PATH') or '.'
-
-
-def get_prefix(bot, msg):
-    guild_id = str(msg.guild.id)
-    with open(os.path.join(BASE_PATH, 'config.json')) as file:
-        config = json.load(file)
-    try:
-        prefix = config[guild_id]['prefix']
-    except KeyError:
-        prefix = config['default']['prefix']
-    return prefix
+if '.env' in os.listdir():
+    from dotenv import load_dotenv
+    load_dotenv()
 
 
-def set_prefix(msg, *args):
-    guild_id = str(msg.guild.id)
-    with open(os.path.join(BASE_PATH, 'config.json')) as file:
-        config = json.load(file)
-    try:
-        config[guild_id]
-    except KeyError:
-        config[guild_id] = {}
-    if len(args) == 1 and args[0] == '!' and list(config[guild_id].keys()) == ['prefix']:
-        config.pop(guild_id, None)
-    else:
-        config[guild_id]['prefix'] = list(args)
-    with open(os.path.join(BASE_PATH, 'config.json'), 'w') as file:
-        json.dump(config, file, indent=2)
+class Config:
+    DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
+    YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY')
+    BOT_ENV = os.environ.get('BOT_ENV').lower()  # This can be either development or production
 
 
-def add_to_playlist_cache(playlist_id, video_id):
-    with open(os.path.join(BASE_PATH, 'config.json')) as file:
-        config = json.load(file)
-    yt_playlists = config['default'].get('yt playlists')
-    if yt_playlists is None:
-        config['default']['yt playlists'] = dict()
-    playlist_videos = config['default']['yt playlists'].get(playlist_id)
-    if playlist_videos is None:
-        config['default']['yt playlists'][playlist_id] = list()
-    playlist_videos = config['default']['yt playlists'].get(playlist_id)
-    if len(playlist_videos) > 10:
-        for _ in range(5):
-            playlist_videos.pop()
-    if video_id not in playlist_videos:
-        playlist_videos.append(video_id)
-    with open(os.path.join(BASE_PATH, 'config.json'), 'w') as file:
-        json.dump(config, file, indent=2)
+class ServerConfig:
+    @staticmethod
+    def get_default_setting(name):
+        default_settings = {
+            'prefix': '!'
+            # 'followed_playlists': 'UUvnoM0R1sDKm-YCPifEso_g' (Absolute uploads)
+            # 'notifications_channel': channel id
+        }
+        return default_settings.get(name)
+
+    @classmethod
+    def get_setting(cls, guild_id: int, name: str):
+        guild = db.session.query(db.Guild).filter_by(id=guild_id).first()
+        if guild:
+            for setting in guild.settings:
+                if setting.name == name:
+                    return setting.value
+        return cls.get_default_setting(name)
+
+    @staticmethod
+    def set_setting(guild_id: int, name: str, value: str):
+        guild = db.session.query(db.Guild).filter_by(id=guild_id).first()
+        if guild is None:
+            guild = db.Guild(id=guild_id)
+            db.session.add(guild)
+        setting = db.Setting(name=name, value=value, guild=guild)
+        db.session.add(setting)
+        db.session.commit()
 
 
-def get_playlist_cache(playlist_id: str):
-    with open(os.path.join(BASE_PATH, 'config.json')) as file:
-        config = json.load(file)
-    try:
-        videos = config['default']['yt playlists'][playlist_id]
-    except:
-        return list()
-    else:
-        return videos
+class YoutubeVideos:
+    @staticmethod
+    def add_videos(playlist_id, videos: list):
+        playlist = db.session.query(db.YoutubePlaylist).filter_by(playlist_id=playlist_id).first()
+        if playlist is None:
+            playlist = db.YoutubePlaylist(playlist_id=playlist_id)
+            db.session.add(playlist)
+        for video_id in videos:
+            db_video = db.session.query(db.PlaylistVideo).filter_by(video_id=video_id).first()
+            if db_video is None:
+                db_video = db.PlaylistVideo(video_id=video_id, playlist=playlist)
+                db.session.add(db_video)
+        db.session.commit()
 
+    @staticmethod
+    def get_videos() -> list:
+        return map(lambda video: video.video_id, db.session.query(db.PlaylistVideo).all())
 
-def set_yt_notifier_channel(guild_id, channel_id):
-    with open(os.path.join(BASE_PATH, 'config.json')) as file:
-        config = json.load(file)
-    try:
-        config[guild_id]
-    except KeyError:
-        config[guild_id] = {}
-    config[guild_id]['yt notifier channel'] = channel_id
-    with open(os.path.join(BASE_PATH, 'config.json'), 'w') as file:
-        json.dump(config, file, indent=2)
-
-
-def get_yt_notifier_channel(guild_id):
-    guild_id = str(guild_id)
-    with open(os.path.join(BASE_PATH, 'config.json')) as file:
-        config = json.load(file)
-    try:
-        notifier_channel = config[guild_id]['yt notifier channel']
-    except KeyError:
-        return None
-    else:
-        return notifier_channel
-
-
-if __name__ == "__main__":
-    print(get_yt_notifier_channel('663834937606012962'))
-    print(get_playlist_cache('UUvnoM0R1sDKm-YCPifEso_g'))
+    @staticmethod
+    def get_playlists() -> list:
+        return map(lambda playlist: playlist.playlist_id, db.session.query(db.YoutubePlaylist).all())
