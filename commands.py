@@ -74,6 +74,10 @@ class Loops(commands.Cog):
             channel_id = ServerConfig.get_setting(guild.id, 'notifications_channel')
             channel = discord.utils.get(guild.channels, id=channel_id)
             print(f'INFO: -- channel is {channel}')
+            print(f'INFO: -- channel_id is {channel_id}')
+            print(f'INFO: -- guild channels:')
+            for channel in guild.channels:
+                print(f'INFO: --- {channel}')
             if channel is None:
                 continue
             followed_playlists = ServerConfig.get_setting(guild.id, 'followed_playlists')
