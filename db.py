@@ -39,7 +39,7 @@ class YoutubePlaylist(Base):
 class PlaylistVideo(Base):
     __tablename__ = 'playlist_videos'
 
-    id = Column(String(50), primary_key=True)
+    id = Column(Integer, primary_key=True)
     video_id = Column(String(50), nullable=False, unique=True)
     playlist_id = Column(Integer, ForeignKey('youtube_playlists.id'))
 
