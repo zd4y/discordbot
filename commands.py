@@ -157,10 +157,10 @@ class BotConfigCmds(commands.Cog):
                         value=f'Para seguir un canal de youtube y recibir notificaciones de sus nuevos videos, usa `{ctx.prefix}config yt add channel <canal>`. Para más información usa `{ctx.prefix}help config yt add channel`\n\nTambién puedes usar `{ctx.prefix}config yt remove playlist <playlist_id>` para eliminar un canal (Puedes ver la id de las playlists más abajo)\n\u200b', inline=False)
 
         notifications_channel = ServerConfig.get_setting(ctx.guild.id, 'notifications_channel')
-        if notifications_channel is None:
-            notifications_channel = 'Ninguno'
-        else:
+        try:
             notifications_channel = discord.utils.get(ctx.guild.channels, id=int(notifications_channel)).mention
+        except Exception:
+            notifications_channel = 'Ninguno/Eliminado'
         value = f'El canal para notificaciones es: {notifications_channel}'
         followed_playlists = ServerConfig.get_setting(ctx.guild.id, 'followed_playlists')
         if followed_playlists:
