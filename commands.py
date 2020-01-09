@@ -66,16 +66,22 @@ class Loops(commands.Cog):
 
     @tasks.loop(minutes=5)
     async def youtube_notifier(self):
+        print()
+        print()
         print('INFO: starting yt notifier')
         for guild in self.bot.guilds:
+            print(f'INFO: - starting with guild {guild.name}')
             channel_id = ServerConfig.get_setting(guild.id, 'notifications_channel')
             channel = discord.utils.get(guild.channels, id=channel_id)
+            print(f'INFO: -- channel is {channel}')
             if channel is None:
                 continue
             followed_playlists = ServerConfig.get_setting(guild.id, 'followed_playlists')
+            print(f'INFO: -- followed playlists are {followed_playlists}')
             if followed_playlists is None:
                 continue
             for playlist_id in followed_playlists:
+                print(f'INFO --- starting with playlist_id: {playlist_id}')
                 URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
                 params = {
                     'part': 'snippet,contentDetails',
@@ -85,12 +91,17 @@ class Loops(commands.Cog):
                 }
                 res = requests.get(URL, params=params)
                 videos = res.json()['items'][::-1]
+                print(f'INFO: --- got {len(videos)} videos')
                 for video in videos:
+                    print(f'INFO: --- checking the cache for the video: {video}')
+                    print()
                     video_cache = YoutubeVideos.get_videos()
                     video_info = video['snippet']
                     video_id = video_info['resourceId']['videoId']
                     if video_id in video_cache:
+                        print('INFO: ---- video was in cache, skipping')
                         continue
+                    print('INFO: ---- video was not in cache! sending message to the channel')
                     video_url = 'https://www.youtube.com/watch?v=' + video_info['resourceId']['videoId']
                     video_desc = video_info['description'][:151] + '...'
                     embed = discord.Embed(
@@ -102,7 +113,11 @@ class Loops(commands.Cog):
                     embed.description += f'\n{video_url}'
                     embed.set_image(url=video_info['thumbnails']['medium']['url'])
                     await channel.send(embed=embed)
+                    print('INFO: ---- message sent')
                     YoutubeVideos.add_videos(playlist_id, [video_id])
+                    print()
+            print()
+            print()
 
 
 # TODO Put the help and aliases in the commands here
