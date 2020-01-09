@@ -80,7 +80,10 @@ class Loops(commands.Cog):
                 print(f'INFO: --- {channel.id}')
             if channel is None:
                 continue
-            followed_playlists = ServerConfig.get_setting(guild.id, 'followed_playlists')
+            try:
+                followed_playlists = ServerConfig.get_setting(guild.id, 'followed_playlists').split()
+            except Exception:
+                followed_playlists = []
             print(f'INFO: -- followed playlists are {followed_playlists}')
             if followed_playlists is None:
                 continue
