@@ -77,7 +77,7 @@ class Loops(commands.Cog):
             print(f'INFO: -- channel_id is {channel_id}')
             print(f'INFO: -- guild channels:')
             for channel in guild.channels:
-                print(f'INFO: --- {channel}')
+                print(f'INFO: --- {channel.id}')
             if channel is None:
                 continue
             followed_playlists = ServerConfig.get_setting(guild.id, 'followed_playlists')
