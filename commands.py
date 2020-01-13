@@ -98,7 +98,7 @@ class Loops(commands.Cog):
             except Exception:
                 followed_playlists = []
             print(f'INFO: -- followed playlists are {followed_playlists}')
-            async for playlist_id in followed_playlists:
+            for playlist_id in followed_playlists:
                 print(f'INFO --- starting with playlist_id: {playlist_id}')
                 URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
                 params = {
@@ -198,7 +198,7 @@ class BotConfigCmds(commands.Cog):
         if followed_playlists:
             followed_playlists = followed_playlists.split()
             value += '\nLa id de las playlists seguidas son:'
-            async for playlist_id in followed_playlists:
+            for playlist_id in followed_playlists:
                 URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
                 params = {
                     'part': 'snippet',
