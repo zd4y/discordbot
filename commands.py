@@ -60,7 +60,6 @@ class Listeners(commands.Cog):
             embed.description = f'Se ha producido un error:\n\n```{error_msg}```'
         else:
             embed.description = 'Error desconocido'
-            # TODO See if server has debug=True, if so, show the error.
             debug = ServerConfig.get_setting(ctx.guild.id, 'debug')
             if debug:
                 error_msg = getattr(error, 'message', None)
