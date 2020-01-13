@@ -207,8 +207,7 @@ class BotConfigCmds(commands.Cog):
                     'playlistId': playlist_id,
                     'key': Config.YOUTUBE_API_KEY
                 }
-                res = requests.get(URL, params=params)
-                channel_title = res.json()['items'][0]['snippet']['channelTitle']
+                channel_title = fetch(session, URL, params=params)['items'][0]['snippet']['channelTitle']
                 value += f'\n- {playlist_id} (Videos de {channel_title})'
         else:
             value += '\nActualmente no sigues ninguna playlist ni canal'
@@ -250,8 +249,7 @@ class BotConfigCmds(commands.Cog):
                 'q': yt_channel,
                 'key': Config.YOUTUBE_API_KEY
             }
-            res = requests.get(URL, params=params)
-            channel_id = res.json()['items'][0]['snippet']['channelId']
+            channel_id = fetch(session, URL, params=params)['items'][0]['snippet']['channelId']
 
         URL = 'https://www.googleapis.com/youtube/v3/channels'
         params = {
@@ -259,8 +257,7 @@ class BotConfigCmds(commands.Cog):
             'id': channel_id,
             'key': Config.YOUTUBE_API_KEY
         }
-        res = requests.get(URL, params=params)
-        channel = res.json()['items'][0]
+        channel = fetch(session, URL, params=params)['items'][0]
         channel_playlist = channel['contentDetails']['relatedPlaylists']['uploads']
         followed_playlists = await ServerConfig.get_setting(ctx.guild.id, 'followed_playlists')
         if followed_playlists:
