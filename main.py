@@ -3,7 +3,8 @@ from config import Config, ServerConfig
 
 
 async def get_prefix(bot, msg):
-    return await ServerConfig.get_setting(msg.guild.id, 'prefix').split()
+    prefix = await ServerConfig.get_setting(msg.guild.id, 'prefix')
+    return prefix.split()
 
 
 bot = commands.Bot(command_prefix=get_prefix)
