@@ -70,7 +70,7 @@ class Listeners(commands.Cog):
         await ctx.send(embed=embed)
 
 
-# TODO a lot to do here :C
+# TODO change INFO prints with logging.info()
 class Loops(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -107,7 +107,7 @@ class Loops(commands.Cog):
                     'playlistId': playlist_id,
                     'key': Config.YOUTUBE_API_KEY
                 }
-                videos = await fetch(session, URL, params=params)['items'][::-1]
+                videos = (await fetch(session, URL, params=params))['items'][::-1]
                 print(f'INFO: --- got {len(videos)} videos')
                 for video in videos:
                     print(f'INFO: --- checking the cache for the video: {video}')
@@ -206,7 +206,7 @@ class BotConfigCmds(commands.Cog):
                     'playlistId': playlist_id,
                     'key': Config.YOUTUBE_API_KEY
                 }
-                channel_title = await fetch(session, URL, params=params)['items'][0]['snippet']['channelTitle']
+                channel_title = (await fetch(session, URL, params=params))['items'][0]['snippet']['channelTitle']
                 value += f'\n- {playlist_id} (Videos de {channel_title})'
         else:
             value += '\nActualmente no sigues ninguna playlist ni canal'
@@ -248,7 +248,7 @@ class BotConfigCmds(commands.Cog):
                 'q': yt_channel,
                 'key': Config.YOUTUBE_API_KEY
             }
-            channel_id = await fetch(session, URL, params=params)['items'][0]['snippet']['channelId']
+            channel_id = (await fetch(session, URL, params=params))['items'][0]['snippet']['channelId']
 
         URL = 'https://www.googleapis.com/youtube/v3/channels'
         params = {
@@ -256,7 +256,7 @@ class BotConfigCmds(commands.Cog):
             'id': channel_id,
             'key': Config.YOUTUBE_API_KEY
         }
-        channel = await fetch(session, URL, params=params)['items'][0]
+        channel = (await fetch(session, URL, params=params))['items'][0]
         channel_playlist = channel['contentDetails']['relatedPlaylists']['uploads']
         followed_playlists = await ServerConfig.get_setting(ctx.guild.id, 'followed_playlists')
         if followed_playlists:
@@ -466,7 +466,7 @@ class UserCmds(commands.Cog):
                 'q': yt_channel,
                 'key': Config.YOUTUBE_API_KEY
             }
-            channel_id = await fetch(session, URL, params=params)['items'][0]['snippet']['channelId']
+            channel_id = (await fetch(session, URL, params=params))['items'][0]['snippet']['channelId']
 
         URL = 'https://www.googleapis.com/youtube/v3/channels'
         params = {
@@ -474,7 +474,7 @@ class UserCmds(commands.Cog):
             'id': channel_id,
             'key': Config.YOUTUBE_API_KEY
         }
-        channel_playlist = await fetch(session, URL, params=params)['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+        channel_playlist = (await fetch(session, URL, params=params))['items'][0]['contentDetails']['relatedPlaylists']['uploads']
 
         URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
         params = {
@@ -483,7 +483,7 @@ class UserCmds(commands.Cog):
             'playlistId': channel_playlist,
             'key': Config.YOUTUBE_API_KEY
         }
-        latest_video = await fetch(session, URL, params=params)['items'][0]
+        latest_video = (await fetch(session, URL, params=params))['items'][0]
         video_url = 'https://www.youtube.com/watch?v=' + latest_video['snippet']['resourceId']['videoId']
         await ctx.send(video_url)
 
@@ -533,4 +533,4 @@ def setup(bot: commands.Bot):
 
 
 def teardown(bot):
-    session.close()
+    await session.close()
