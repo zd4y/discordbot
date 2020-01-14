@@ -56,13 +56,13 @@ class Listeners(commands.Cog):
         elif isinstance(error, commands.MissingRequiredArgument):
             embed.description = f'Faltan argumentos. Revisa el `{ctx.prefix}help {ctx.command}` para obtener ayuda acerca del comando.'
         elif isinstance(error, discord.DiscordException):
-            error_msg = getattr(error, 'message', None)
+            error_msg = str(error)
             embed.description = f'Se ha producido un error:\n\n```{error_msg}```'
         else:
             embed.description = 'Error desconocido'
             debug = ServerConfig.get_setting(ctx.guild.id, 'debug')
             if debug:
-                error_msg = getattr(error, 'message', None)
+                error_msg = str(error)
                 if error_msg:
                     embed.description += ':\n\n```{error_msg}```'
             # TODO Log the error
