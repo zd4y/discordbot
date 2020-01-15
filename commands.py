@@ -92,6 +92,7 @@ class Loops(commands.Cog):
             print(f'INFO: -- channel is {channel.name}')
             print(f'INFO: -- channel_id is {channel_id}')
             if channel is None:
+                print('INFO: -- no ha sido colocado un canal para las novedades, skipping...')
                 continue
             try:
                 followed_playlists = await ServerConfig.get_setting(guild.id, 'followed_playlists').split()
