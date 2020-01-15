@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands, tasks
 from typing import Optional
 import aiohttp
+import asyncio
 from config import Config, ServerConfig, YoutubeVideos
 import re
 
@@ -167,7 +168,7 @@ class BotConfigCmds(commands.Cog):
             )
             await ctx.send(embed=embed)
         else:
-            prefixes = self.bot.command_prefix(self.bot, ctx.message)
+            prefixes = await ServerConfig.get_setting(ctx.guild.id, 'prefix')
             if isinstance(prefixes, list):
                 prefixes = ' '.join(prefixes)
             embed = discord.Embed(
@@ -218,7 +219,7 @@ class BotConfigCmds(commands.Cog):
         # TODO Display a message showing what can be done with this command
         pass
 
-    @set_.command(help='Coloca el canal al cual se enviaran las novedades (nuevos videos canal de YouTube, Absolute)')
+    @set_.command(help='Coloca el canal al cual se enviaran las novedades (nuevos videos canales de YouTube configurados)')
     async def channel(self, ctx, channel: discord.TextChannel):
         await ServerConfig.set_setting(ctx.guild.id, 'notifications_channel', channel.id)
         embed = discord.Embed(
@@ -446,13 +447,11 @@ class UserCmds(commands.Cog):
             await ctx.send(embed=embed)
 
     @commands.command(
-        help='Muestra el último video subido al canal <canal> o al de Absolute si ningun argumento es pasado.' +
+        help='Muestra el último video subido al canal <canal>' +
         '\n<canal> puede ser la url o el nombre de un canal de youtube', aliases=['ultimo', 'youtube', 'latest'],
         usage='[canal]'
     )
-    async def yt(self, ctx, yt_channel=None):
-        if yt_channel is None:
-            yt_channel = 'https://www.youtube.com/channel/UCvnoM0R1sDKm-YCPifEso_g'  # Canal de Absolute
+    async def yt(self, ctx, yt_channel):
         pattern = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
         is_url = bool(pattern.search(yt_channel))
         if is_url:
@@ -532,5 +531,6 @@ def setup(bot: commands.Bot):
     bot.add_cog(UserCmds(bot))
 
 
-def teardown(bot):
-    await session.close()
+def teardown(bot: commands.Bot):
+    loop = asyncio.get_event_loop()
+    loop.create_task(session.close())

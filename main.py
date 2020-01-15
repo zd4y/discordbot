@@ -11,4 +11,5 @@ bot = commands.Bot(command_prefix=get_prefix)
 
 bot.load_extension('commands')
 
-bot.run(Config.DISCORD_TOKEN)
+if __name__ == "__main__":
+    bot.run(Config.DISCORD_TOKEN)
