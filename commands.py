@@ -89,9 +89,8 @@ class Loops(commands.Cog):
             print(f'INFO: - starting with guild {guild.name}')
             channel_id = await ServerConfig.get_setting(guild.id, 'notifications_channel')
             channel = discord.utils.get(guild.channels, id=channel_id)
-            print(f'INFO: -- channel is {channel}')
+            print(f'INFO: -- channel is {channel.name}')
             print(f'INFO: -- channel_id is {channel_id}')
-            print(f'INFO: -- guild channels:')
             if channel is None:
                 continue
             try:
