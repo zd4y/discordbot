@@ -88,12 +88,14 @@ class Loops(commands.Cog):
         logging.info('starting yt notifier')
         for guild in self.bot.guilds:
             logging.info(f'starting with guild {guild.name}')
-            channel_id = await ServerConfig.get_setting(guild.id, 'notifications_channel')
+            channel_id = int(await ServerConfig.get_setting(guild.id, 'notifications_channel'))
             channel = discord.utils.get(guild.channels, id=channel_id)
             logging.info(f'channel_id is {channel_id}')
             if channel is None:
                 logging.info('no ha sido colocado un canal para las novedades, skipping...')
                 continue
+            else:
+                logging.info('channel name is {channel.name}')
             try:
                 followed_playlists = await ServerConfig.get_setting(guild.id, 'followed_playlists').split()
             except Exception:
