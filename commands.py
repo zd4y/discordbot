@@ -98,7 +98,8 @@ class Loops(commands.Cog):
                 logging.info(f'channel name is {channel.name}')
             try:
                 followed_playlists = await ServerConfig.get_setting(guild.id, 'followed_playlists').split()
-            except Exception:
+            except Exception as error:
+                logging.error(error)
                 followed_playlists = []
             logging.info(f'followed playlists are {followed_playlists}')
             for playlist_id in followed_playlists:
