@@ -95,7 +95,7 @@ class Loops(commands.Cog):
                 logging.info('no ha sido colocado un canal para las novedades, skipping...')
                 continue
             else:
-                logging.info('channel name is {channel.name}')
+                logging.info(f'channel name is {channel.name}')
             try:
                 followed_playlists = await ServerConfig.get_setting(guild.id, 'followed_playlists').split()
             except Exception:
