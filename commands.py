@@ -532,6 +532,19 @@ class UserCmds(commands.Cog):
         )
         await ctx.send(embed=embed)
 
+    @commands.command()
+    async def fullembed(self, ctx, *args):
+        embed = discord.Embed(
+            title='Full embed',
+            description=' '.join(args)
+        )
+        embed.set_footer(text='Footer')
+        embed.set_thumbnail(url='https://img.icons8.com/bubbles/2x/google-logo.png')
+        embed.set_image(url='https://d2dgtayfmpkokn.cloudfront.net/wp-content/uploads/sites/322/2016/09/11074109/google-icon.jpg')
+        embed.set_author(url='Author')
+        embed.add_field(name='Field', value='Value')
+        await ctx.send(embed=embed)
+
 
 async def create_session():
     return aiohttp.ClientSession()
