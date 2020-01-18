@@ -27,7 +27,7 @@ class Listeners(commands.Cog):
     async def on_ready(self):
         activity = discord.Game('prefix: !')
         await self.bot.change_presence(activity=activity)
-        print('Bot is ready')
+        logging.info('Bot is ready')
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
@@ -70,12 +70,10 @@ class Listeners(commands.Cog):
                 error_msg = str(error)
                 if error_msg:
                     embed.description += ':\n\n```{error_msg}```'
-            # TODO Log the error
-            print(error.__class__, error_msg)
+            logging.error(str(error))
         await ctx.send(embed=embed)
 
 
-# TODO change INFO prints with logging.info()
 class Loops(commands.Cog):
     def __init__(self, bot: commands.Bot, session: aiohttp.ClientSession):
         self.bot = bot
@@ -87,25 +85,23 @@ class Loops(commands.Cog):
 
     @tasks.loop(minutes=30)
     async def youtube_notifier(self):
-        print()
-        print()
-        print('INFO: starting yt notifier')
+        logging.info('starting yt notifier')
         for guild in self.bot.guilds:
-            print(f'INFO: - starting with guild {guild.name}')
+            logging.info(f'starting with guild {guild.name}')
             channel_id = await ServerConfig.get_setting(guild.id, 'notifications_channel')
             channel = discord.utils.get(guild.channels, id=channel_id)
-            print(f'INFO: -- channel is {channel.name}')
-            print(f'INFO: -- channel_id is {channel_id}')
+            logging.info(f'channel is {channel.name}')
+            logging.info(f'channel_id is {channel_id}')
             if channel is None:
-                print('INFO: -- no ha sido colocado un canal para las novedades, skipping...')
+                logging.info('no ha sido colocado un canal para las novedades, skipping...')
                 continue
             try:
                 followed_playlists = await ServerConfig.get_setting(guild.id, 'followed_playlists').split()
             except Exception:
                 followed_playlists = []
-            print(f'INFO: -- followed playlists are {followed_playlists}')
+            logging.info(f'followed playlists are {followed_playlists}')
             for playlist_id in followed_playlists:
-                print(f'INFO --- starting with playlist_id: {playlist_id}')
+                logging.info(f'starting with playlist_id: {playlist_id}')
                 URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
                 params = {
                     'part': 'snippet,contentDetails',
@@ -114,24 +110,20 @@ class Loops(commands.Cog):
                     'key': Config.YOUTUBE_API_KEY
                 }
                 videos = (await fetch(self.session, URL, params=params))['items'][::-1]
-                print(f'INFO: --- got {len(videos)} videos')
+                logging.info(f'got {len(videos)} videos')
                 for video in videos:
-                    print(f'INFO: --- checking the cache for the video: {video}')
-                    print()
+                    logging.info(f'checking the cache for the video: {video}')
                     video_cache = await YoutubeVideos.get_videos()
                     video_info = video['snippet']
                     video_id = video_info['resourceId']['videoId']
                     if video_id in video_cache:
-                        print('INFO: ---- video was in cache, skipping')
+                        logging.info('video was in cache, skipping')
                         continue
-                    print('INFO: ---- video was not in cache! sending message to the channel')
+                    logging.info('video was not in cache! sending message to the channel')
                     video_url = 'https://www.youtube.com/watch?v=' + video_info['resourceId']['videoId']
                     await channel.send(video_url)
-                    print('INFO: ---- message sent')
+                    logging.info('message sent')
                     await YoutubeVideos.add_videos(playlist_id, [video_id])
-                    print()
-            print()
-            print()
 
 
 # TODO Put the help and aliases in the commands here
@@ -431,11 +423,8 @@ class UserCmds(commands.Cog):
             if command.aliases:
                 aliases = '\', \''.join(command.aliases)
                 embed.description += f'\nAlias: {aliases}'
-            # TODO Remove this print
-            print(command.args)
             await ctx.send(embed=embed)
         else:
-            # TODO Get all prefixes from database (not existing yet)
             embed = discord.Embed(
                 title='Ayuda',
                 description=f'Prefix: {ctx.prefix}\n\nLista de comandos del bot:',
