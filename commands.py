@@ -90,7 +90,6 @@ class Loops(commands.Cog):
             logging.info(f'starting with guild {guild.name}')
             channel_id = await ServerConfig.get_setting(guild.id, 'notifications_channel')
             channel = discord.utils.get(guild.channels, id=channel_id)
-            logging.info(f'channel is {channel.name}')
             logging.info(f'channel_id is {channel_id}')
             if channel is None:
                 logging.info('no ha sido colocado un canal para las novedades, skipping...')
