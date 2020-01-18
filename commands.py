@@ -519,6 +519,18 @@ class UserCmds(commands.Cog):
         embed.set_image(url=member.avatar_url)
         await ctx.send(embed=embed)
 
+    @commands.command()
+    async def echo(self, ctx, *args):
+        await ctx.send(' '.join(args))
+
+    @commands.command()
+    async def echoembed(self, ctx, *args):
+        embed = discord.Embed(
+            title='Echo',
+            description=' '.join(args)
+        )
+        await ctx.send(embed=embed)
+
 
 async def create_session():
     return aiohttp.ClientSession()
