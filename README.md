@@ -25,7 +25,7 @@ Replace the text between the brackets with the actual tokens, you have to get th
 
 > Note: The Youtube API Key is only required if you want the notifier to work.
 
-Alternatively, add the environment variables with export from your terminal:
+Alternatively, add the environment variables with export from your terminal (If you are on Windows, use `set` instead):
 
 ```
 export DISCORD_TOKEN={Your bot's discord token here}
