@@ -2,7 +2,7 @@
 
 My first discord bot created using python, with some moderation commands and a youtube notifier for any channel.
 
-To do:
+**To do:**
 
 - [ ] Use GINO instead of SQLAlchemy
 
