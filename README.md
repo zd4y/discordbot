@@ -1,6 +1,6 @@
 # Discordbot
 
-My first discord bot created using python, with some moderation commands and a youtube notifier for the channel "Absolute".
+My first discord bot created using python, with some moderation commands and a youtube notifier for any channel.
 
 ## Setup/Usage
 
