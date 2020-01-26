@@ -17,7 +17,7 @@ Install the pip requirements with `pip install -r requirements.txt`
 
 ### Required environment variables
 
-Create a .env file in the same folder where the `main.py` file is located and add these lines:
+Create a .env file in the same folder where the `bot` folder is located and add these lines:
 
 ```
 DISCORD_TOKEN={Your bot's discord token here}
@@ -48,6 +48,6 @@ Run the python interpreter in the same folder and enter the following:
 
 ---
 
-Then run main.py:
+Then run:
 
-`python main.py`
+`python bot`

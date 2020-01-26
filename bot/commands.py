@@ -3,9 +3,9 @@ from discord.ext import commands, tasks
 from typing import Optional
 import aiohttp
 import asyncio
-from .config import Config, ServerConfig, YoutubeVideos
+from config import Config, ServerConfig, YoutubeVideos
 import re
-from .config import logging
+from config import logging
 
 
 async def fetch(session, url, **kwargs):

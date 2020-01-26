@@ -1,5 +1,5 @@
 from discord.ext import commands
-from .config import Config, ServerConfig
+from config import Config, ServerConfig
 
 
 async def get_prefix(bot, msg):
