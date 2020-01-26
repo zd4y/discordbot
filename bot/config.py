@@ -1,5 +1,5 @@
 import os
-import db
+from . import db
 
 import logging
 
