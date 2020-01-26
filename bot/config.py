@@ -1,9 +1,19 @@
 import os
 import db
 
-if '.env' in os.listdir().extend(os.listdir('..')):
+import logging
+
+logging.basicConfig(filename='latest.log', level=logging.DEBUG,
+                    format='%(asctime)s.%(msecs)03d:%(levelname)s:%(name)s:%(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+logging.getLogger('').addHandler(console)
+
+PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+if '.env' in os.listdir(PATH):
     from dotenv import load_dotenv
-    load_dotenv()
+    load_dotenv(dotenv_path=os.path.join(PATH, '.env'))
 
 
 class Config:
