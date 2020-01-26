@@ -1,5 +1,5 @@
 from discord.ext import commands
-from .config import Config, ServerConfig
+from config import Config, ServerConfig
 
 
 async def get_prefix(bot, msg):
@@ -9,7 +9,7 @@ async def get_prefix(bot, msg):
 
 bot = commands.Bot(command_prefix=get_prefix)
 
-bot.load_extension('bot.commands')
+bot.load_extension('commands')
 
 
 def main():

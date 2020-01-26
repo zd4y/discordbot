@@ -50,4 +50,4 @@ Run the python interpreter in the same folder and enter the following:
 
 Then run:
 
-`python -m bot`
+`python bot`

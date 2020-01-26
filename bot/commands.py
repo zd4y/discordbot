@@ -299,7 +299,7 @@ class BotConfigCmds(commands.Cog):
                 self.bot.reload_extension(arg)
         else:
             # TODO Si hay mas extensiones en el futuro hay que agregarlas.
-            self.bot.reload_extension('bot.commands')
+            self.bot.reload_extension('commands')
         embed = discord.Embed(
             title='Reloaded ✅',
             color=discord.Color.red(),
