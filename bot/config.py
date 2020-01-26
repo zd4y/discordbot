@@ -1,7 +1,7 @@
 import os
 import db
 
-if '.env' in os.listdir():
+if '.env' in os.listdir().extend(os.listdir('..')):
     from dotenv import load_dotenv
     load_dotenv()
 
