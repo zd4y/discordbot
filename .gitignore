@@ -3,4 +3,4 @@ __pycache__/
 env/
 .env
 guilds.db
-log.txt
+latest.log

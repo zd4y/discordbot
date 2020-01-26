@@ -5,13 +5,7 @@ import aiohttp
 import asyncio
 from config import Config, ServerConfig, YoutubeVideos
 import re
-import logging
-
-logging.basicConfig(filename='./log.txt', level=logging.DEBUG,
-                    format='%(asctime)s.%(msecs)03d:%(levelname)s:%(name)s:%(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-logging.getLogger('').addHandler(console)
+from main import logging
 
 
 async def fetch(session, url, **kwargs):
