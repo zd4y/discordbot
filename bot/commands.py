@@ -543,10 +543,11 @@ class UserCmds(commands.Cog):
 async def create_session():
     return aiohttp.ClientSession()
 
+loop = asyncio.get_event_loop()
+session = loop.run_until_complete(create_session())
+
 
 def setup(bot: commands.Bot):
-    loop = asyncio.get_event_loop()
-    session = loop.run_until_complete(create_session())
     bot.add_cog(Listeners(bot))
     bot.add_cog(Loops(bot, session))
     bot.add_cog(BotConfigCmds(bot, session))
