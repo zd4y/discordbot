@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands, tasks
 from typing import Optional
-import aiohttp
 import asyncio
 from config import Config, ServerConfig, YoutubeVideos
 import re
@@ -63,16 +62,15 @@ class Listeners(commands.Cog):
             if debug:
                 error_msg = str(error)
                 if error_msg:
-                    embed.description += ':\n\n```{error_msg}```'
+                    embed.description += ':\n\n||```{error_msg}```||'
             logging.error(str(error))
         await ctx.send(embed=embed)
 
 
 class Loops(commands.Cog):
-    def __init__(self, bot: commands.Bot, session: aiohttp.ClientSession):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.youtube_notifier.start()
-        self.session = session
 
     def cog_unload(self):
         self.youtube_notifier.cancel()
@@ -98,14 +96,14 @@ class Loops(commands.Cog):
             logging.info(f'followed playlists are {followed_playlists}')
             for playlist_id in followed_playlists:
                 logging.info(f'starting with playlist_id: {playlist_id}')
-                URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
+                url = 'https://www.googleapis.com/youtube/v3/playlistItems'
                 params = {
                     'part': 'snippet,contentDetails',
                     'maxResults': 5,
                     'playlistId': playlist_id,
                     'key': Config.YOUTUBE_API_KEY
                 }
-                videos = (await fetch(self.session, URL, params=params))['items'][::-1]
+                videos = (await fetch(self.bot.session, url, params=params))['items'][::-1]
                 logging.info(f'got {len(videos)} videos')
                 for video in videos:
                     logging.info(f'checking the cache for the video: {video}')
@@ -124,9 +122,8 @@ class Loops(commands.Cog):
 
 # TODO Put the help and aliases in the commands here
 class BotConfigCmds(commands.Cog):
-    def __init__(self, bot: commands.Bot, session: aiohttp.ClientSession):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.session = session
 
     def cog_check(self, ctx):
         return ('manage_guild', True) in ctx.author.permissions_in(ctx.channel)
@@ -194,14 +191,14 @@ class BotConfigCmds(commands.Cog):
             followed_playlists = followed_playlists.split()
             value += '\nLa id de las playlists seguidas son:'
             for playlist_id in followed_playlists:
-                URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
+                url = 'https://www.googleapis.com/youtube/v3/playlistItems'
                 params = {
                     'part': 'snippet',
                     'maxResults': '1',
                     'playlistId': playlist_id,
                     'key': Config.YOUTUBE_API_KEY
                 }
-                channel_title = (await fetch(self.session, URL, params=params))['items'][0]['snippet']['channelTitle']
+                channel_title = (await fetch(self.bot.session, url, params=params))['items'][0]['snippet']['channelTitle']
                 value += f'\n- {playlist_id} (Videos de {channel_title})'
         else:
             value += '\nActualmente no sigues ninguna playlist ni canal'
@@ -235,7 +232,7 @@ class BotConfigCmds(commands.Cog):
         if is_url:
             channel_id = yt_channel.split('/')[-1]
         else:
-            URL = 'https://www.googleapis.com/youtube/v3/search'
+            url = 'https://www.googleapis.com/youtube/v3/search'
             params = {
                 'part': 'snippet',
                 'type': 'channel',
@@ -243,15 +240,15 @@ class BotConfigCmds(commands.Cog):
                 'q': yt_channel,
                 'key': Config.YOUTUBE_API_KEY
             }
-            channel_id = (await fetch(self.session, URL, params=params))['items'][0]['snippet']['channelId']
+            channel_id = (await fetch(self.bot.session, url, params=params))['items'][0]['snippet']['channelId']
 
-        URL = 'https://www.googleapis.com/youtube/v3/channels'
+        url = 'https://www.googleapis.com/youtube/v3/channels'
         params = {
             'part': 'snippet,contentDetails',
             'id': channel_id,
             'key': Config.YOUTUBE_API_KEY
         }
-        channel = (await fetch(self.session, URL, params=params))['items'][0]
+        channel = (await fetch(self.bot.session, url, params=params))['items'][0]
         channel_playlist = channel['contentDetails']['relatedPlaylists']['uploads']
         followed_playlists = await ServerConfig.get_setting(ctx.guild.id, 'followed_playlists')
         if followed_playlists:
@@ -402,9 +399,8 @@ class ModerationCmds(commands.Cog):
 
 
 class UserCmds(commands.Cog):
-    def __init__(self, bot: commands.Bot, session=aiohttp.ClientSession):
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.session = session
 
     @commands.command(help='Muestra ayuda acerca del bot', aliases=['ayuda', 'comandos', 'commands'], usage='[comando]')
     async def help2(self, ctx, command: Optional[commands.Command]):
@@ -449,7 +445,7 @@ class UserCmds(commands.Cog):
         if is_url:
             channel_id = yt_channel.split('/')[-1]
         else:
-            URL = 'https://www.googleapis.com/youtube/v3/search'
+            url = 'https://www.googleapis.com/youtube/v3/search'
             params = {
                 'part': 'snippet',
                 'type': 'channel',
@@ -457,24 +453,24 @@ class UserCmds(commands.Cog):
                 'q': yt_channel,
                 'key': Config.YOUTUBE_API_KEY
             }
-            channel_id = (await fetch(self.session, URL, params=params))['items'][0]['snippet']['channelId']
+            channel_id = (await fetch(self.bot.session, url, params=params))['items'][0]['snippet']['channelId']
 
-        URL = 'https://www.googleapis.com/youtube/v3/channels'
+        url = 'https://www.googleapis.com/youtube/v3/channels'
         params = {
             'part': 'contentDetails',
             'id': channel_id,
             'key': Config.YOUTUBE_API_KEY
         }
-        channel_playlist = (await fetch(self.session, URL, params=params))['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+        channel_playlist = (await fetch(self.bot.session, url, params=params))['items'][0]['contentDetails']['relatedPlaylists']['uploads']
 
-        URL = 'https://www.googleapis.com/youtube/v3/playlistItems'
+        url = 'https://www.googleapis.com/youtube/v3/playlistItems'
         params = {
             'part': 'snippet,contentDetails',
             'maxResults': 1,
             'playlistId': channel_playlist,
             'key': Config.YOUTUBE_API_KEY
         }
-        latest_video = (await fetch(self.session, URL, params=params))['items'][0]
+        latest_video = (await fetch(self.bot.session, url, params=params))['items'][0]
         video_url = 'https://www.youtube.com/watch?v=' + latest_video['snippet']['resourceId']['videoId']
         await ctx.send(video_url)
 
@@ -540,21 +536,9 @@ class UserCmds(commands.Cog):
         await ctx.send(embed=embed)
 
 
-async def create_session():
-    return aiohttp.ClientSession()
-
-loop = asyncio.get_event_loop()
-session = loop.run_until_complete(create_session())
-
-
-def setup(bot: commands.Bot):
+def setup(bot):
     bot.add_cog(Listeners(bot))
-    bot.add_cog(Loops(bot, session))
-    bot.add_cog(BotConfigCmds(bot, session))
+    bot.add_cog(Loops(bot))
+    bot.add_cog(BotConfigCmds(bot))
     bot.add_cog(ModerationCmds(bot))
-    bot.add_cog(UserCmds(bot, session))
-
-
-def teardown(bot: commands.Bot):
-    loop = asyncio.get_event_loop()
-    loop.create_task(session.close())
+    bot.add_cog(UserCmds(bot))
