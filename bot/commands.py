@@ -1,10 +1,9 @@
-import discord
-from discord.ext import commands, tasks
-from typing import Optional
-import asyncio
-from config import Config, ServerConfig, YoutubeVideos
 import re
+import discord
 from config import logging
+from typing import Optional
+from discord.ext import commands, tasks
+from config import Config, ServerConfig, YoutubeVideos
 
 
 async def fetch(session, url, **kwargs):

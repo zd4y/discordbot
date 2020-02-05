@@ -1,6 +1,6 @@
+import aiohttp
 from discord.ext import commands
 from config import Config, ServerConfig
-import aiohttp
 
 
 async def get_prefix(bot, msg):
