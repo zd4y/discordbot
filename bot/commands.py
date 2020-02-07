@@ -1,9 +1,9 @@
 import re
 import discord
-from config import logging
+import logging
 from typing import Optional
 from discord.ext import commands, tasks
-from config import Config, ServerConfig, YoutubeVideos
+from .config import Config, ServerConfig, YoutubeVideos
 
 
 async def fetch(session, url, **kwargs):

@@ -4,7 +4,7 @@ My first discord bot created using python, with some moderation commands and a y
 
 **To do:**
 
-- [ ] Use GINO instead of SQLAlchemy
+- [ ] Use an asyncronous SQL driver instead of SQLAlchemy
 
 ## Setup/Usage
 
@@ -50,4 +50,4 @@ Run the python interpreter in the same folder and enter the following:
 
 Then run:
 
-`python bot`
+`python -m bot`
