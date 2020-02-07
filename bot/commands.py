@@ -22,13 +22,6 @@ class Listeners(commands.Cog):
         logging.info('Bot is ready')
 
     @commands.Cog.listener()
-    async def on_message(self, msg: discord.Message):
-        if msg.author == self.bot.user:
-            return
-        logging.info(msg.content)
-        await msg.channel.send(msg.content)
-
-    @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         # TODO Get the welcoming_channel from server settings
         channel = member.guild.system_channel
