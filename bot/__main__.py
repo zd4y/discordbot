@@ -8,7 +8,7 @@ async def get_prefix(bot, msg):
     return prefix.split()
 
 
-bot = Bot(command_prefix=when_mentioned_or(get_prefix))
+bot = Bot(command_prefix=get_prefix)
 
 bot.load_extension('bot.commands')
 
