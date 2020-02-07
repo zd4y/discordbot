@@ -514,6 +514,7 @@ class UserCmds(commands.Cog):
         msg = ' '.join(args)
         await ctx.send(msg)
     
+    @commands.command()
     async def echo2(self, ctx, msg):
         logging.info(msg)
         await ctx.send(msg)
