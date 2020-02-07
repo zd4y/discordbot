@@ -1,6 +1,5 @@
 from .bot import Bot
 from .config import Config, ServerConfig
-from discord.ext.commands import when_mentioned_or
 
 
 async def get_prefix(bot, msg):
