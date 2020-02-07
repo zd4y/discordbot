@@ -512,8 +512,10 @@ class UserCmds(commands.Cog):
     @commands.command()
     async def echo(self, ctx, *args):
         msg = ' '.join(args)
+        await ctx.send(msg)
+    
+    async def echo2(self, ctx, msg):
         logging.info(msg)
-        logging.info(msg.split('\n'))
         await ctx.send(msg)
 
     @commands.command()
