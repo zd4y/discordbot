@@ -1,5 +1,8 @@
 # Discordbot
 
+![Python v3.5.3+](https://img.shields.io/badge/python-v3.5.3-blue)
+![License: MIT](https://img.shields.io/github/license/zd4y/discordbot)
+
 My first discord bot created using python, with some moderation commands and a youtube notifier for any channel.
 
 **To do:**
