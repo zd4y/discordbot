@@ -20,9 +20,11 @@ class Listeners(commands.Cog):
         activity = discord.Game('prefix: !')
         await self.bot.change_presence(activity=activity)
         logging.info('Bot is ready')
-    
+
     @commands.Cog.listener()
-    async def on_message(self, msg):
+    async def on_message(self, msg: discord.Message):
+        if msg.author == self.bot:
+            return
         logging.info(msg)
         await msg.channel.send(msg)
 
