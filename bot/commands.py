@@ -20,6 +20,11 @@ class Listeners(commands.Cog):
         activity = discord.Game('prefix: !')
         await self.bot.change_presence(activity=activity)
         logging.info('Bot is ready')
+    
+    @commands.Cog.listener()
+    async def on_message(self, msg):
+        logging.info(msg)
+        await msg.channel.send(msg)
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
@@ -512,11 +517,6 @@ class UserCmds(commands.Cog):
     @commands.command()
     async def echo(self, ctx, *args):
         msg = ' '.join(args)
-        await ctx.send(msg)
-    
-    @commands.command()
-    async def echo2(self, ctx, msg):
-        logging.info(msg)
         await ctx.send(msg)
 
     @commands.command()
