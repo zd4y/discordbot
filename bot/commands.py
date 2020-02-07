@@ -23,7 +23,7 @@ class Listeners(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, msg: discord.Message):
-        if msg.author == self.bot:
+        if msg.author == self.bot.user:
             return
         logging.info(msg)
         await msg.channel.send(msg)
