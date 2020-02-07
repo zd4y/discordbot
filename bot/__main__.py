@@ -5,10 +5,10 @@ from discord.ext.commands import when_mentioned_or
 
 async def get_prefix(bot, msg):
     prefix = await ServerConfig.get_setting(msg.guild.id, 'prefix')
-    return when_mentioned_or(prefix.split())
+    return prefix.split()
 
 
-bot = Bot(command_prefix=get_prefix)
+bot = Bot(command_prefix=when_mentioned_or(get_prefix))
 
 bot.load_extension('bot.commands')
 
