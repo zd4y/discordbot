@@ -1,10 +1,12 @@
 from .bot import Bot
 from .config import Config, ServerConfig
+from discord.ext.commands import when_mentioned_or
 
 
 async def get_prefix(bot, msg):
     prefix = await ServerConfig.get_setting(msg.guild.id, 'prefix')
-    return prefix.split()
+    prefixes = prefix.split()
+    return when_mentioned_or(*prefixes)(bot, msg)
 
 
 bot = Bot(command_prefix=get_prefix)
