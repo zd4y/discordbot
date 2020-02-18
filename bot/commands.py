@@ -76,6 +76,8 @@ class Loops(commands.Cog):
 
     @tasks.loop(minutes=30)
     async def youtube_notifier(self):
+        if self.bot.session is None:
+            return
         logging.info('starting yt notifier')
         for guild in self.bot.guilds:
             logging.info(f'starting with guild {guild.name}')
