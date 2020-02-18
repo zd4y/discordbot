@@ -19,8 +19,8 @@ class ServerConfig:
         default_settings = {
             'prefix': '!',
             'debug': False
-            # 'followed_playlists': 'UUvnoM0R1sDKm-YCPifEso_g' (Absolute uploads)
-            # 'notifications_channel': channel id
+            # 'followed_playlists': '<youtube playlist id>'
+            # 'notifications_channel': '<discord channel id>'
         }
         return default_settings.get(name, default)
 
