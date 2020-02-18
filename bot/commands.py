@@ -105,10 +105,10 @@ class Loops(commands.Cog):
                 videos = (await fetch(self.bot.session, url, params=params))['items'][::-1]
                 logging.info(f'got {len(videos)} videos')
                 for video in videos:
-                    logging.info(f'checking the cache for the video: {video}')
-                    video_cache = await YoutubeVideos.get_videos()
                     video_info = video['snippet']
                     video_id = video_info['resourceId']['videoId']
+                    logging.info(f'checking the cache for the video: {video_id}')
+                    video_cache = await YoutubeVideos.get_videos()
                     if video_id in video_cache:
                         logging.info('video was in cache, skipping')
                         continue
