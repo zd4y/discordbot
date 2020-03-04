@@ -23,7 +23,7 @@ class Guild(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=False)
     settings = relationship('Setting', backref='guild')
-    youtube_playlists = relationship('YoutubePlaylist', secondary=guild_playlists, back_populates='guild')
+    youtube_playlists = relationship('YoutubePlaylist', secondary=guild_playlists, back_populates='guilds')
 
 
 class Setting(Base):

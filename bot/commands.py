@@ -273,13 +273,6 @@ class BotConfigCmds(commands.Cog):
 
     @remove.command()
     async def playlist(self, ctx, playlist_id):
-        # followed_playlists = await ServerConfig.get_setting(ctx.guild.id, 'followed_playlists')
-        # if followed_playlists:
-        #     followed_playlists = followed_playlists.split()
-        # else:
-        #     followed_playlists = []
-        # followed_playlists.remove(playlist_id)
-
         db_guild = await db.get(db.Guild, id=ctx.guild.id)
         if db_guild is None:
             db_guild = db.Guild(id=ctx.guild.id)
