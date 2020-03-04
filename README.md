@@ -8,6 +8,7 @@ My first discord bot created using python, with some moderation commands and a y
 **To do:**
 
 - [ ] Use an asyncronous SQL driver instead of SQLAlchemy
+- [ ] Translate messages to english
 
 ## Setup/Usage
 
