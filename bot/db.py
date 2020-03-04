@@ -49,7 +49,7 @@ class YoutubePlaylist(Base):
     channel = Column(String(30))
     playlist_id = Column(String(50), nullable=False, unique=True)
     guilds = relationship('Guild', secondary=guild_playlists, back_populates='youtube_playlists')
-    videos = relationship('YoutubeVideo', secondary=playlist_videos, back_populates='playlist')
+    videos = relationship('YoutubeVideo', secondary=playlist_videos, back_populates='playlists')
 
 
 class YoutubeVideo(Base):
