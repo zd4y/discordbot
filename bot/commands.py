@@ -262,7 +262,8 @@ class BotConfigCmds(commands.Cog):
         if db_guild is None:
             db_guild = db.Guild(id=ctx.guild.id)
             db.session.add(db_guild)
-        db_guild.youtube_playlists.append(db.YoutubePlaylist(playlist_id=channel_playlist, channel=channel_title))
+        db_playlist = await db.get(db.YoutubePlaylist, playlist_id=channel_playlist) or db.YoutubePlaylist(playlist_id=channel_playlist, channel=channel_title)
+        db_guild.youtube_playlists.append(db_playlist)
         db.session.commit()
 
         embed = discord.Embed(
