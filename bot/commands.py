@@ -102,7 +102,9 @@ class Loops(commands.Cog):
                     continue
                 logging.info('video was not in cache! sending message to the channel')
                 video_url = 'https://www.youtube.com/watch?v=' + video_info['resourceId']['videoId']
+                has_guilds = False
                 for db_guild in playlist.guilds:
+                    has_guilds = True
                     guild = discord.utils.get(self.bot.guilds, id=db_guild.id)
                     logging.info(f'notifying guild: {guild.name}')
                     channel_id = int(await ServerConfig.get_setting(guild.id, 'notifications_channel'))
@@ -110,7 +112,12 @@ class Loops(commands.Cog):
 
                     await channel.send(video_url)
                     logging.info('message sent')
+
                 await YoutubeVideos.add_videos(playlist.playlist_id, [video_id])
+
+                if has_guilds is False:
+                    db.session.delete(playlist)
+                    db.session.commit()
 
 
 # TODO Put the help and aliases in the commands here
@@ -280,6 +287,7 @@ class BotConfigCmds(commands.Cog):
         else:
             playlist = await db.get(db.YoutubePlaylist, playlist_id=playlist_id)
             db_guild.youtube_playlists.remove(playlist)
+            db.session.delete(playlist)
         db.session.commit()
 
         embed = discord.Embed(
