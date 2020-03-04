@@ -57,7 +57,7 @@ class YoutubeVideo(Base):
 
     id = Column(Integer, primary_key=True)
     video_id = Column(String(50), nullable=False, unique=True)
-    playlists = relationship('YoutubePlaylist', secondary=guild_playlists, back_populates='videos')
+    playlists = relationship('YoutubePlaylist', secondary=playlist_videos, back_populates='videos')
 
 
 def create_all():
