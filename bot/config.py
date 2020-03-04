@@ -60,7 +60,8 @@ class YoutubeVideos:
         for video_id in videos:
             db_video = db.session.query(db.YoutubeVideo).filter_by(video_id=video_id).first()
             if db_video is None:
-                db_video = db.YoutubeVideo(video_id=video_id, playlist=playlist)
+                db_video = db.YoutubeVideo(video_id=video_id)
+                db_video.playlists.append(playlist)
                 db.session.add(db_video)
         db.session.commit()
 

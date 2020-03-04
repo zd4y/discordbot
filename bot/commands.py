@@ -81,7 +81,6 @@ class Loops(commands.Cog):
             return
         logging.info('starting yt notifier')
         for playlist in db.session.query(db.YoutubePlaylist).all():
-            playlist.playlist_id
             logging.info(f'starting with playlist_id: {playlist.playlist_id}')
             url = 'https://www.googleapis.com/youtube/v3/playlistItems'
             params = {
