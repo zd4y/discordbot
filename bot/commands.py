@@ -288,7 +288,8 @@ class BotConfigCmds(commands.Cog):
         else:
             playlist = await db.get(db.YoutubePlaylist, playlist_id=playlist_id)
             db_guild.youtube_playlists.remove(playlist)
-            db.session.delete(playlist)
+            if not playlist.guilds:
+                db.session.delete(playlist)
         db.session.commit()
 
         embed = discord.Embed(
