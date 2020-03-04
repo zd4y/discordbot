@@ -19,7 +19,6 @@ class ServerConfig:
         default_settings = {
             'prefix': '!',
             'debug': False
-            # 'followed_playlists': '<youtube playlist id>'
             # 'notifications_channel': '<discord channel id>'
         }
         return default_settings.get(name, default)
@@ -59,15 +58,15 @@ class YoutubeVideos:
             playlist = db.YoutubePlaylist(playlist_id=playlist_id)
             db.session.add(playlist)
         for video_id in videos:
-            db_video = db.session.query(db.PlaylistVideo).filter_by(video_id=video_id).first()
+            db_video = db.session.query(db.YoutubeVideo).filter_by(video_id=video_id).first()
             if db_video is None:
-                db_video = db.PlaylistVideo(video_id=video_id, playlist=playlist)
+                db_video = db.YoutubeVideo(video_id=video_id, playlist=playlist)
                 db.session.add(db_video)
         db.session.commit()
 
     @staticmethod
     async def get_videos() -> list:
-        return map(lambda video: video.video_id, db.session.query(db.PlaylistVideo).all())
+        return map(lambda video: video.video_id, db.session.query(db.YoutubeVideo).all())
 
     @staticmethod
     async def get_playlists() -> list:

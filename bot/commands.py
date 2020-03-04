@@ -1,6 +1,7 @@
 import re
 import discord
 import logging
+from . import db
 from typing import Optional
 from discord.ext import commands, tasks
 from .config import Config, ServerConfig, YoutubeVideos
@@ -79,46 +80,37 @@ class Loops(commands.Cog):
         if self.bot.session is None:
             return
         logging.info('starting yt notifier')
-        for guild in self.bot.guilds:
-            logging.info(f'starting with guild {guild.name}')
-            channel_id = int(await ServerConfig.get_setting(guild.id, 'notifications_channel'))
-            channel = discord.utils.get(guild.channels, id=channel_id)
-            logging.info(f'channel_id is {channel_id}')
-            if channel is None:
-                logging.info('no ha sido colocado un canal para las novedades, skipping...')
-                continue
-            else:
-                logging.info(f'channel name is {channel.name}')
-            try:
-                followed_playlists = (await ServerConfig.get_setting(guild.id, 'followed_playlists')).split()
-            except Exception as error:
-                logging.error(error)
-                followed_playlists = []
-            logging.info(f'followed playlists are {followed_playlists}')
-            for playlist_id in followed_playlists:
-                logging.info(f'starting with playlist_id: {playlist_id}')
-                url = 'https://www.googleapis.com/youtube/v3/playlistItems'
-                params = {
-                    'part': 'snippet,contentDetails',
-                    'maxResults': 5,
-                    'playlistId': playlist_id,
-                    'key': Config.YOUTUBE_API_KEY
-                }
-                videos = (await fetch(self.bot.session, url, params=params))['items'][::-1]
-                logging.info(f'got {len(videos)} videos')
-                for video in videos:
-                    video_info = video['snippet']
-                    video_id = video_info['resourceId']['videoId']
-                    logging.info(f'checking the cache for the video: {video_id}')
-                    video_cache = await YoutubeVideos.get_videos()
-                    if video_id in video_cache:
-                        logging.info('video was in cache, skipping')
-                        continue
-                    logging.info('video was not in cache! sending message to the channel')
-                    video_url = 'https://www.youtube.com/watch?v=' + video_info['resourceId']['videoId']
+        for playlist in db.session.query(db.YoutubePlaylist).all():
+            playlist.playlist_id
+            logging.info(f'starting with playlist_id: {playlist.playlist_id}')
+            url = 'https://www.googleapis.com/youtube/v3/playlistItems'
+            params = {
+                'part': 'snippet,contentDetails',
+                'maxResults': 5,
+                'playlistId': playlist.playlist_id,
+                'key': Config.YOUTUBE_API_KEY
+            }
+            videos = (await fetch(self.bot.session, url, params=params))['items'][::-1]
+            logging.info(f'got {len(videos)} videos')
+            for video in videos:
+                video_info = video['snippet']
+                video_id = video_info['resourceId']['videoId']
+                logging.info(f'checking the cache for the video: {video_id}')
+                video_cache = await YoutubeVideos.get_videos()
+                if video_id in video_cache:
+                    logging.info('video was in cache, skipping')
+                    continue
+                logging.info('video was not in cache! sending message to the channel')
+                video_url = 'https://www.youtube.com/watch?v=' + video_info['resourceId']['videoId']
+                for db_guild in playlist.guilds:
+                    guild = discord.utils.get(self.bot.guilds, id=db_guild.id)
+                    logging.info(f'notifying guild: {guild.name}')
+                    channel_id = int(await ServerConfig.get_setting(guild.id, 'notifications_channel'))
+                    channel = discord.utils.get(guild.channels, id=channel_id)
+
                     await channel.send(video_url)
                     logging.info('message sent')
-                    await YoutubeVideos.add_videos(playlist_id, [video_id])
+                await YoutubeVideos.add_videos(playlist.playlist_id, [video_id])
 
 
 # TODO Put the help and aliases in the commands here
@@ -187,20 +179,25 @@ class BotConfigCmds(commands.Cog):
         except Exception:
             notifications_channel = 'Ninguno/Eliminado'
         value = f'El canal para notificaciones es: {notifications_channel}'
-        followed_playlists = await ServerConfig.get_setting(ctx.guild.id, 'followed_playlists')
+        db_guild = await db.get(db.Guild, id=ctx.guild.id)
+        if db_guild:
+            followed_playlists = db_guild.youtube_playlists
+        else:
+            followed_playlists = None
         if followed_playlists:
-            followed_playlists = followed_playlists.split()
             value += '\nLa id de las playlists seguidas son:'
-            for playlist_id in followed_playlists:
-                url = 'https://www.googleapis.com/youtube/v3/playlistItems'
-                params = {
-                    'part': 'snippet',
-                    'maxResults': '1',
-                    'playlistId': playlist_id,
-                    'key': Config.YOUTUBE_API_KEY
-                }
-                channel_title = (await fetch(self.bot.session, url, params=params))['items'][0]['snippet']['channelTitle']
-                value += f'\n- {playlist_id} (Videos de {channel_title})'
+            for playlist in followed_playlists:
+                channel_title = playlist.channel
+                if channel_title is None:
+                    url = 'https://www.googleapis.com/youtube/v3/playlistItems'
+                    params = {
+                        'part': 'snippet',
+                        'maxResults': '1',
+                        'playlistId': playlist.playlist_id,
+                        'key': Config.YOUTUBE_API_KEY
+                    }
+                    channel_title = (await fetch(self.bot.session, url, params=params))['items'][0]['snippet']['channelTitle']
+                value += f'\n- {playlist.playlist_id} (Videos de {channel_title})'
         else:
             value += '\nActualmente no sigues ninguna playlist ni canal'
         embed.add_field(name='Configuraciones Actuales', value=value)
@@ -251,16 +248,16 @@ class BotConfigCmds(commands.Cog):
         }
         channel = (await fetch(self.bot.session, url, params=params))['items'][0]
         channel_playlist = channel['contentDetails']['relatedPlaylists']['uploads']
-        followed_playlists = await ServerConfig.get_setting(ctx.guild.id, 'followed_playlists')
-        if followed_playlists:
-            followed_playlists = followed_playlists.split()
-        else:
-            followed_playlists = []
-        followed_playlists.append(channel_playlist)
-        await ServerConfig.set_setting(ctx.guild.id, 'followed_playlists', ' '.join(followed_playlists))
-
         channel_info = channel['snippet']
         channel_title = channel_info['title']
+
+        db_guild = await db.get(db.Guild, id=ctx.guild.id)
+        if db_guild is None:
+            db_guild = db.Guild(id=ctx.guild.id)
+            db.session.add(db_guild)
+        db_guild.youtube_playlists.append(db.YoutubePlaylist(playlist_id=channel_playlist, channel=channel_title))
+        db.session.commit()
+
         embed = discord.Embed(
             title='Canal Agregado! ✅',
             description=f'El canal {channel_title} ha sido agregado correctamente!',
@@ -276,13 +273,22 @@ class BotConfigCmds(commands.Cog):
 
     @remove.command()
     async def playlist(self, ctx, playlist_id):
-        followed_playlists = await ServerConfig.get_setting(ctx.guild.id, 'followed_playlists')
-        if followed_playlists:
-            followed_playlists = followed_playlists.split()
+        # followed_playlists = await ServerConfig.get_setting(ctx.guild.id, 'followed_playlists')
+        # if followed_playlists:
+        #     followed_playlists = followed_playlists.split()
+        # else:
+        #     followed_playlists = []
+        # followed_playlists.remove(playlist_id)
+
+        db_guild = await db.get(db.Guild, id=ctx.guild.id)
+        if db_guild is None:
+            db_guild = db.Guild(id=ctx.guild.id)
+            db.session.add(db_guild)
         else:
-            followed_playlists = []
-        followed_playlists.remove(playlist_id)
-        await ServerConfig.set_setting(ctx.guild.id, 'followed_playlists', ' '.join(followed_playlists))
+            playlist = await db.get(db.YoutubePlaylist, playlist_id=playlist_id)
+            db_guild.youtube_playlists.remove(playlist)
+        db.session.commit()
+
         embed = discord.Embed(
             title='Playlist eliminada! ✅',
             description='La playlist ha sido eliminada correctamente.',
