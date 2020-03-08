@@ -24,6 +24,9 @@ class Listeners(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
+        if member.bot:
+            return
+
         # TODO Get the welcoming_channel from server settings
         channel = member.guild.system_channel
         default_role = discord.utils.get(member.guild.roles, name='Miembro')
