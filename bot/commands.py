@@ -201,7 +201,7 @@ class BotConfigCmds(commands.Cog):
                     url = 'https://www.googleapis.com/youtube/v3/playlistItems'
                     params = {
                         'part': 'snippet',
-                        'maxResults': '1',
+                        'maxResults': 1,
                         'playlistId': playlist.playlist_id,
                         'key': Config.YOUTUBE_API_KEY
                     }

@@ -11,6 +11,11 @@ async def get_prefix(bot, msg):
 
 bot = Bot(command_prefix=get_prefix)
 
+
+@bot.check
+async def block_dms(ctx):
+    return ctx.guild is not None
+
 bot.load_extension('bot.commands')
 
 bot.run(Config.DISCORD_TOKEN)
