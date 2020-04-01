@@ -523,23 +523,22 @@ class UserCmds(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def echo(self, ctx, *args):
-        msg = ' '.join(args)
+    async def echo(self, ctx, *, msg):
         await ctx.send(msg)
 
     @commands.command()
-    async def echoembed(self, ctx, *args):
+    async def echoembed(self, ctx, *, description):
         embed = discord.Embed(
             title='Echo',
-            description=' '.join(args)
+            description=description
         )
         await ctx.send(embed=embed)
 
     @commands.command()
-    async def fullembed(self, ctx, *args):
+    async def fullembed(self, ctx, *, description):
         embed = discord.Embed(
             title='Full embed',
-            description=' '.join(args)
+            description=description
         )
         embed.set_footer(text='Footer')
         embed.set_thumbnail(url='https://img.icons8.com/bubbles/2x/google-logo.png')
