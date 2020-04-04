@@ -150,13 +150,12 @@ class BotConfigCmds(commands.Cog):
         usage='[nuevos prefixes]'
     )
     @commands.has_permissions(manage_guild=True)
-    async def prefix(self, ctx, *args):
-        if args:
-            await ServerConfig.set_setting(ctx.guild.id, 'prefix', ' '.join(args))
-            prefixes = ' '.join(args)
+    async def prefix(self, ctx, *, new_prefixes=None):
+        if new_prefixes:
+            await ServerConfig.set_setting(ctx.guild.id, 'prefix', new_prefixes)
             embed = discord.Embed(
                 title='Prefix editado! ✅',
-                description=f'Los prefixes ahora son: {prefixes}',
+                description=f'Los prefixes ahora son: {new_prefixes}',
                 color=discord.Color.red()
             )
             await ctx.send(embed=embed)
@@ -335,8 +334,7 @@ class ModerationCmds(commands.Cog):
 
     @commands.command(help='Prohible un usuario en el servidor', usage='<usuario> [razón]')
     @commands.has_permissions(ban_members=True)
-    async def ban(self, ctx, member: discord.Member, *args: str):
-        reason = ' '.join(args) or None
+    async def ban(self, ctx, member: discord.Member, *, reason=None):
         await member.ban(reason=reason)
         embed = discord.Embed(
             title=f'Usuario baneado ✅',
@@ -349,8 +347,7 @@ class ModerationCmds(commands.Cog):
 
     @commands.command(help='Permite un usuario en el servidor que anteriormente habia sido baneado', usage='<usuario> [razón]')
     @commands.has_permissions(ban_members=True)
-    async def unban(self, ctx, member: discord.Member, *args: str):
-        reason = ' '.join(args) or None
+    async def unban(self, ctx, member: discord.Member, *, reason=None):
         await member.unban(reason=reason)
         embed = discord.Embed(
             title=f'Usuario desbaneado ✅',
@@ -363,8 +360,7 @@ class ModerationCmds(commands.Cog):
 
     @commands.command(help='Expulsa a un usuario del servidor', usage='<usuario> [razón]', aliases=['expulsar'])
     @commands.has_permissions(kick_members=True)
-    async def kick(self, ctx, member: discord.Member, *args: str):
-        reason = ' '.join(args) or None
+    async def kick(self, ctx, member: discord.Member, *, reason=None):
         await member.kick(reason=reason)
         embed = discord.Embed(
             title=f'Usuario expulsado ✅',
@@ -377,7 +373,7 @@ class ModerationCmds(commands.Cog):
 
     @commands.command(help='Evita que un usuario envie mensajes o entre a canales de voz', usage='<usuario> [razón]')
     @commands.has_permissions(manage_messages=True)
-    async def mute(self, ctx, member: discord.Member, *args):
+    async def mute(self, ctx, member: discord.Member, *, reason=None):
         role = discord.utils.get(ctx.guild.roles, name='Muted')
         if role is None:
             role = await ctx.guild.create_role(name='Muted', color=discord.Color.dark_grey())
@@ -389,14 +385,13 @@ class ModerationCmds(commands.Cog):
             description=f'El usuario {member.name} ha sido silenciado satisfactoriamente',
             color=discord.Color.red()
         )
-        reason = ' '.join(args)
         if reason:
             embed.description += f'\nRazón: {reason}'
         await ctx.send(embed=embed)
 
     @commands.command(help='Permite a un usuario silenciado hablar y escribir nuevamente', usage='<usuario> [razón]')
     @commands.has_permissions(manage_messages=True)
-    async def unmute(self, ctx, member: discord.Member, *args):
+    async def unmute(self, ctx, member: discord.Member, *, reason=None):
         role = discord.utils.get(ctx.guild.roles, name='Muted')
         await member.remove_roles(role)
         embed = discord.Embed(
@@ -404,7 +399,6 @@ class ModerationCmds(commands.Cog):
             description=f'El usuario {member.name} ha sido des-silenciado satisfactoriamente',
             color=discord.Color.red()
         )
-        reason = ' '.join(args)
         if reason:
             embed.description += f'\nRazón: {reason}'
         await ctx.send(embed=embed)
