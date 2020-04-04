@@ -232,7 +232,7 @@ class BotConfigCmds(commands.Cog):
         pass
 
     @add.command(name='channel')
-    async def channel_(self, ctx, yt_channel):
+    async def channel_(self, ctx, *, yt_channel):
         pattern = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
         is_url = bool(pattern.search(yt_channel))
         if is_url:
