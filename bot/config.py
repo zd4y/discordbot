@@ -52,7 +52,7 @@ class ServerConfig:
 
 class YoutubeVideos:
     @staticmethod
-    async def add_videos(playlist_id, videos: list):
+    async def add_videos(playlist_id, videos: tuple):
         playlist = db.session.query(db.YoutubePlaylist).filter_by(playlist_id=playlist_id).first()
         if playlist is None:
             playlist = db.YoutubePlaylist(playlist_id=playlist_id)
@@ -66,9 +66,9 @@ class YoutubeVideos:
         db.session.commit()
 
     @staticmethod
-    async def get_videos() -> list:
+    async def get_videos():
         return map(lambda video: video.video_id, db.session.query(db.YoutubeVideo).all())
 
     @staticmethod
-    async def get_playlists() -> list:
+    async def get_playlists():
         return map(lambda playlist: playlist.playlist_id, db.session.query(db.YoutubePlaylist).all())

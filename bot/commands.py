@@ -78,12 +78,16 @@ class Loops(commands.Cog):
     def cog_unload(self):
         self.youtube_notifier.cancel()
 
-    @tasks.loop(minutes=30)
+    @tasks.loop(minutes=1)
     async def youtube_notifier(self):
         if self.bot.session is None:
             return
         logging.info('starting yt notifier')
         for playlist in db.session.query(db.YoutubePlaylist).all():
+            if not playlist.guilds:
+                db.session.delete(playlist)
+                db.session.commit()
+                continue
             logging.info(f'starting with playlist_id: {playlist.playlist_id}')
             url = 'https://www.googleapis.com/youtube/v3/playlistItems'
             params = {
@@ -95,31 +99,29 @@ class Loops(commands.Cog):
             videos = (await fetch(self.bot.session, url, params=params))['items'][::-1]
             logging.info(f'got {len(videos)} videos')
             for video in videos:
-                video_info = video['snippet']
-                video_id = video_info['resourceId']['videoId']
+                video_id = video['snippet']['resourceId']['videoId']
                 logging.info(f'checking the cache for the video: {video_id}')
-                video_cache = await YoutubeVideos.get_videos()
-                if video_id in video_cache:
+                db_video = await db.get(db.YoutubeVideo, video_id=video_id)
+                if db_video:
                     logging.info('video was in cache, skipping')
                     continue
                 logging.info('video was not in cache! sending message to the channel')
-                video_url = 'https://www.youtube.com/watch?v=' + video_info['resourceId']['videoId']
-                has_guilds = False
+                video_url = 'https://www.youtube.com/watch?v=' + video_id
                 for db_guild in playlist.guilds:
-                    has_guilds = True
-                    guild = discord.utils.get(self.bot.guilds, id=db_guild.id)
+                    guild = self.bot.get_guild(db_guild.id)
                     logging.info(f'notifying guild: {guild.name}')
-                    channel_id = int(await ServerConfig.get_setting(guild.id, 'notifications_channel'))
-                    channel = discord.utils.get(guild.channels, id=channel_id)
+                    try:
+                        channel_id = int(await ServerConfig.get_setting(guild.id, 'notifications_channel'))
+                    except TypeError:
+                        logging.info('channel not found!')
+                        await guild.system_channel.send('Por favor elige un canal para las notificaciones de videos usando `config yt set channel #canal`')
+                        continue
+                    channel = self.bot.get_channel(channel_id)
 
                     await channel.send(video_url)
                     logging.info('message sent')
 
-                await YoutubeVideos.add_videos(playlist.playlist_id, [video_id])
-
-                if has_guilds is False:
-                    db.session.delete(playlist)
-                    db.session.commit()
+                await YoutubeVideos.add_videos(playlist.playlist_id, (video_id,))
 
 
 # TODO Put the help and aliases in the commands here
