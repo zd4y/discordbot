@@ -78,7 +78,7 @@ class Loops(commands.Cog):
     def cog_unload(self):
         self.youtube_notifier.cancel()
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(minutes=30)
     async def youtube_notifier(self):
         if self.bot.session is None:
             return
