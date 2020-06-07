@@ -9,6 +9,8 @@ from .config import Settings
 from discord.ext import commands, tasks
 from .utils import to_str_bool, to_bool, use_db
 
+from sqlalchemy.orm import Session
+
 
 async def fetch(session, url, **kwargs):
     async with session.get(url, **kwargs) as res:
@@ -84,12 +86,12 @@ class Loops(commands.Cog):
 
     @tasks.loop(minutes=Settings.LOOP_MINUTES)
     @use_db
-    async def youtube_notifier(self):
+    async def youtube_notifier(self, db: Session):
         logging.info('starting yt notifier')
-        for playlist in crud.get_all_playlists():
+        for playlist in crud.get_all_playlists(db):
             playlist_guilds = playlist.guilds
             if not playlist_guilds:
-                crud.delete_playlist(playlist)
+                crud.delete_playlist(playlist, db)
                 continue
             logging.info(f'starting with playlist_id: {playlist.playlist_id}')
             url = 'https://www.googleapis.com/youtube/v3/playlistItems'
@@ -104,7 +106,7 @@ class Loops(commands.Cog):
             for video in videos:
                 video_id = video['snippet']['resourceId']['videoId']
                 logging.info(f'checking the cache for the video: {video_id}')
-                db_video = crud.get_video(video_id)
+                db_video = crud.get_video(video_id, db)
                 if db_video:
                     logging.info('video was in cache, skipping')
                     continue
@@ -114,7 +116,7 @@ class Loops(commands.Cog):
                     guild = self.bot.get_guild(db_guild.id)
                     logging.info(f'notifying guild: {guild.name}')
                     try:
-                        channel_id = int(crud.get_guild_setting(db_guild, 'notifications_channel'))
+                        channel_id = int(crud.get_guild_setting(db_guild, 'notifications_channel', db))
                     except TypeError:
                         logging.info('channel not found!')
                         await guild.system_channel.send('Por favor elige un canal para las notificaciones de videos usando `config yt set channel #canal`')
@@ -123,7 +125,7 @@ class Loops(commands.Cog):
                     await channel.send(video_url)
                     logging.info('message sent')
 
-                crud.add_video(playlist, video_id)
+                crud.add_video(playlist, video_id, db)
 
     @youtube_notifier.before_loop
     async def before_notifier(self):

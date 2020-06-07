@@ -1,24 +1,35 @@
+from typing import Optional
+from sqlalchemy.orm import Session
+
 from .config import Settings
-from .database import session
-from .models import Base, YoutubePlaylist, YoutubeVideo, Guild, Setting
+from .database import Base, session
+from .models import YoutubePlaylist, YoutubeVideo, Guild, Setting
 
 
-def get(model: Base, **kwargs):
+def get_query(model: Base, db: Optional[Session] = None):
+    if db:
+        return db.query(model)
+    return model.query
+
+
+def get(model: Base, db: Optional[Session] = None, **kwargs):
     if not kwargs:
         raise TypeError('You must provide at least one keyword argument')
-    return model.query.filter_by(**kwargs).first()
+    query = get_query(model, db)
+    return query.filter_by(**kwargs).first()
 
 
 def get_by_id(model: Base, obj_id: int):
     return model.query.get(obj_id)
 
 
-def get_video(video_id: str):
-    return get(model=YoutubeVideo, video_id=video_id)
+def get_video(video_id: str, db: Optional[Session] = None):
+    return get(model=YoutubeVideo, db=db, video_id=video_id)
 
 
-def get_all_playlists():
-    return YoutubePlaylist.query.all()
+def get_all_playlists(db: Optional[Session]):
+    query = get_query(YoutubePlaylist, db)
+    return query.all()
 
 
 def get_guid(guild_id):
@@ -33,8 +44,8 @@ def create_one(model: Base, **kwargs):
     return obj
 
 
-def get_or_create(model: Base, **kwargs):
-    obj = get(model, **kwargs)
+def get_or_create(model: Base, db: Optional[Session] = None, **kwargs):
+    obj = get(model, db, **kwargs)
     if obj is None:
         obj = create_one(model, **kwargs)
     return obj
@@ -56,9 +67,11 @@ def get_or_create_playlist(playlist_id: str):
     return get_or_create(model=YoutubePlaylist, playlist_id=playlist_id)
 
 
-def delete_playlist(playlist: YoutubePlaylist):
-    session.delete(playlist)
-    session.commit()
+def delete_playlist(playlist: YoutubePlaylist, db: Optional[Session] = None):
+    if db is None:
+        db = session
+    db.delete(playlist)
+    db.commit()
 
 
 def create_playlist(playlist_id: str, channel: str):
@@ -73,8 +86,8 @@ def add_playlist(guild: Guild, playlist_id: str, channel: str):
     session.commit()
 
 
-def add_video(playlist: YoutubePlaylist, video_id: str):
-    video = get_or_create(YoutubeVideo, video_id=video_id)
+def add_video(playlist: YoutubePlaylist, video_id: str, db: Optional[Session] = None):
+    video = get_or_create(YoutubeVideo, db, video_id=video_id)
     video.playlists.append(playlist)
     session.commit()
     return video
@@ -86,8 +99,9 @@ def create_guild_setting(guild: Guild, setting_name: str, setting_value: str):
     session.commit()
 
 
-def get_guild_setting(guild: Guild, setting_name: str, as_db=False):
-    setting = Setting.query.filter(Setting.guild == guild, Setting.name == setting_name).first()
+def get_guild_setting(guild: Guild, setting_name: str, db: Optional[Session] = None, as_db=False):
+    query = get_query(Setting, db)
+    setting = query.filter(Setting.guild == guild, Setting.name == setting_name).first()
     if as_db:
         return setting
     elif setting:

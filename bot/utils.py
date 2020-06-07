@@ -1,6 +1,7 @@
 from . import crud
-from .database import session
+from inspect import ismethod
 from functools import wraps
+from .database import session_factory
 from discord.ext.commands import when_mentioned_or
 
 
@@ -24,8 +25,11 @@ def to_str_bool(b: bool):
 def use_db(func: callable):
     @wraps(func)
     async def decorator(*args, **kwargs):
-        session()
-        value = await func(*args, **kwargs)
-        session.remove()
+        db = session_factory()
+        if ismethod(func):
+            value = await func(args[0], db, *args[1:], **kwargs)
+        else:
+            value = await func(db, *args, **kwargs)
+        db.close()
         return value
     return decorator
