@@ -62,9 +62,6 @@ class Listeners(commands.Cog):
             embed.description = 'El bot no tiene permisos suficientes para realizar esa acción'
         elif isinstance(error, commands.MissingRequiredArgument):
             embed.description = f'Faltan argumentos. Revisa el `{ctx.prefix}help {ctx.command}` para obtener ayuda acerca del comando.'
-        elif isinstance(error, discord.DiscordException):
-            error_msg = str(error)
-            embed.description = f'Se ha producido un error:\n\n```{error_msg}```'
         else:
             embed.description = 'Error desconocido'
             guild = crud.get_guid(ctx.guild.id)
