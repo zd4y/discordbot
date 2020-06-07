@@ -2,3 +2,4 @@ discord.py==1.2.5
 python-dotenv==0.10.3
 SQLAlchemy==1.3.12
 psycopg2 # Only required if you are going to use a PostgreSQL database
+alembic

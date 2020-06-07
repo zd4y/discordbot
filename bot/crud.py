@@ -108,7 +108,7 @@ def get_guild_setting(guild: Guild, setting_name: str, db: Optional[Session] = N
         return setting
     elif setting:
         return setting.value
-    return Settings.DEFAULT_SETTINGS.get(setting_name)
+    return str(Settings.DEFAULT_SETTINGS.get(setting_name))
 
 
 def set_guild_setting(guild_id: int, setting_name: str, setting_value: str):
