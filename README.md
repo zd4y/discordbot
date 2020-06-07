@@ -7,14 +7,13 @@ My first discord bot created using python, with some moderation commands and a y
 
 **To do:**
 
-- [ ] Use an asyncronous SQL driver instead of SQLAlchemy
 - [ ] Translate messages to english
 
 ## Setup/Usage
 
 ### Requirements
 
-- Python version 3.5.3 or higher
+- Python version 3.7 or higher
 - Pip
 
 Install the pip requirements with `pip install -r requirements.txt`
@@ -39,15 +38,8 @@ Alternatively, add the environment variables with `export` from your terminal (I
 
 ### Creating the databases
 
-Run the python interpreter in the same folder where `db.py` is located and enter the following:
+Create the database using `alembic upgrade head`
 
-```python
->>> import db
->>> db.create_all()
-```
+### Running the bot
 
----
-
-Then run:
-
-`python -m bot`
+To start the bot use `python -m bot`
