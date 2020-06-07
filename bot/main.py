@@ -1,6 +1,6 @@
 from .bot import Bot
-from .utils import get_prefix
 from .database import session
+from .utils import get_prefix, use_db
 
 
 bot = Bot(command_prefix=get_prefix)
@@ -12,10 +12,9 @@ async def block_dms(ctx):
 
 
 @bot.event
+@use_db
 async def on_message(msg):
-    session()
     await bot.process_commands(msg)
-    session.remove()
 
 
 bot.load_extension('bot.commands')

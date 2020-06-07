@@ -1,4 +1,6 @@
 from . import crud
+from .database import session
+from functools import wraps
 from discord.ext.commands import when_mentioned_or
 
 
@@ -17,3 +19,13 @@ def to_str_bool(b: bool):
     if b is True:
         return '1'
     return '0'
+
+
+def use_db(func: callable):
+    @wraps(func)
+    async def decorator(*args, **kwargs):
+        session()
+        value = await func(*args, **kwargs)
+        session.remove()
+        return value
+    return decorator

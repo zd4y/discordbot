@@ -5,9 +5,9 @@ import logging
 from . import crud
 from .bot import Bot
 from typing import Optional
-from .utils import to_str_bool, to_bool
-from discord.ext import commands, tasks
 from .config import Settings
+from discord.ext import commands, tasks
+from .utils import to_str_bool, to_bool, use_db
 
 
 async def fetch(session, url, **kwargs):
@@ -83,6 +83,7 @@ class Loops(commands.Cog):
         self.youtube_notifier.cancel()
 
     @tasks.loop(minutes=Settings.LOOP_MINUTES)
+    @use_db
     async def youtube_notifier(self):
         if self.bot.session is None:
             return
