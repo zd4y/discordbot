@@ -36,18 +36,20 @@ def get_guid(guild_id):
     return get_by_id(model=Guild, obj_id=guild_id)
 
 
-def create_one(model: Base, **kwargs):
+def create_one(model: Base, db: Optional[Session] = None, **kwargs):
     obj = model(**kwargs)
-    session.add(obj)
-    session.commit()
-    session.refresh(obj)
+    if db is None:
+        db = session
+    db.add(obj)
+    db.commit()
+    db.refresh(obj)
     return obj
 
 
 def get_or_create(model: Base, db: Optional[Session] = None, **kwargs):
     obj = get(model, db, **kwargs)
     if obj is None:
-        obj = create_one(model, **kwargs)
+        obj = create_one(model, db, **kwargs)
     return obj
 
 

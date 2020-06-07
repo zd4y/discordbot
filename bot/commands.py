@@ -7,7 +7,8 @@ from .bot import Bot
 from typing import Optional
 from .config import Settings
 from discord.ext import commands, tasks
-from .utils import to_str_bool, to_bool, use_db
+from .database import session_factory
+from .utils import to_str_bool, to_bool
 
 from sqlalchemy.orm import Session
 
@@ -85,9 +86,11 @@ class Loops(commands.Cog):
         self.youtube_notifier.cancel()
 
     @tasks.loop(minutes=Settings.LOOP_MINUTES)
-    @use_db
-    async def youtube_notifier(self, db: Session):
+    async def youtube_notifier(self):
+        if Settings.YOUTUBE_API_KEY is None:
+            return
         logging.info('starting yt notifier')
+        db = session_factory()
         for playlist in crud.get_all_playlists(db):
             playlist_guilds = playlist.guilds
             if not playlist_guilds:
@@ -126,6 +129,8 @@ class Loops(commands.Cog):
                     logging.info('message sent')
 
                 crud.add_video(playlist, video_id, db)
+
+        db.close()
 
     @youtube_notifier.before_loop
     async def before_notifier(self):
