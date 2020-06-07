@@ -1,6 +1,6 @@
 from .bot import Bot
 from .database import session
-from .utils import get_prefix, use_db
+from .utils import get_prefix
 
 
 bot = Bot(command_prefix=get_prefix)
@@ -11,10 +11,15 @@ async def block_dms(ctx):
     return ctx.guild is not None
 
 
-@bot.event
-@use_db
-async def on_message(msg):
-    await bot.process_commands(msg)
+async def before_invoke(ctx):
+    session()
 
+
+async def after_invoke(ctx):
+    session.remove()
+
+
+bot.before_invoke(before_invoke)
+bot.after_invoke(after_invoke)
 
 bot.load_extension('bot.commands')

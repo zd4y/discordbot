@@ -85,11 +85,10 @@ class Loops(commands.Cog):
     @tasks.loop(minutes=Settings.LOOP_MINUTES)
     @use_db
     async def youtube_notifier(self):
-        if self.bot.session is None:
-            return
         logging.info('starting yt notifier')
         for playlist in crud.get_all_playlists():
-            if not playlist.guilds:
+            playlist_guilds = playlist.guilds
+            if not playlist_guilds:
                 crud.delete_playlist(playlist)
                 continue
             logging.info(f'starting with playlist_id: {playlist.playlist_id}')
@@ -111,7 +110,7 @@ class Loops(commands.Cog):
                     continue
                 logging.info('video was not in cache! sending message to the channel')
                 video_url = 'https://www.youtube.com/watch?v=' + video_id
-                for db_guild in playlist.guilds:
+                for db_guild in playlist_guilds:
                     guild = self.bot.get_guild(db_guild.id)
                     logging.info(f'notifying guild: {guild.name}')
                     try:
@@ -121,11 +120,14 @@ class Loops(commands.Cog):
                         await guild.system_channel.send('Por favor elige un canal para las notificaciones de videos usando `config yt set channel #canal`')
                         continue
                     channel = self.bot.get_channel(channel_id)
-
                     await channel.send(video_url)
                     logging.info('message sent')
 
                 crud.add_video(playlist, video_id)
+
+    @youtube_notifier.before_loop
+    async def before_notifier(self):
+        await self.bot.wait_until_ready()
 
 
 # TODO Put the help and aliases in the commands here
@@ -270,9 +272,7 @@ class BotConfigCmds(commands.Cog):
         channel_info = channel['snippet']
         channel_title = channel_info['title']
 
-        db_guild = crud.get_guid(ctx.guild.id)
-        if db_guild is None:
-            crud.create_guild(ctx.guild.id)
+        db_guild = crud.get_or_create_guild(ctx.guild.id)
         crud.add_playlist(guild=db_guild, playlist_id=channel_playlist, channel=channel_title)
 
         embed = discord.Embed(
