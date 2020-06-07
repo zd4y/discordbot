@@ -1,74 +1,13 @@
 import os
-from . import db
+import json
+from dotenv import load_dotenv
 
-PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-if '.env' in os.listdir(PATH):
-    from dotenv import load_dotenv
-    load_dotenv(dotenv_path=os.path.join(PATH, '.env'))
+load_dotenv()
 
 
-class Config:
-    DISCORD_TOKEN = os.environ.get('DISCORD_TOKEN')
+class Settings:
+    LOOP_MINUTES = int(os.environ['LOOP_MINUTES'])
+    DISCORD_TOKEN = os.environ['DISCORD_TOKEN']
+    DEFAULT_SETTINGS = json.loads(os.environ['DEFAULT_SETTINGS'])
     YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY')
-
-
-class ServerConfig:
-    @staticmethod
-    async def get_default_setting(name, default=None):
-        default_settings = {
-            'prefix': '!',
-            'debug': False
-            # 'notifications_channel': '<discord channel id>'
-        }
-        return default_settings.get(name, default)
-
-    @classmethod
-    async def get_setting(cls, guild_id: int, name: str, default=None):
-        guild = db.session.query(db.Guild).filter_by(id=guild_id).first()
-        if guild:
-            for setting in guild.settings:
-                if setting.name == name:
-                    return setting.value
-        return await cls.get_default_setting(name, default)
-
-    @classmethod
-    async def set_setting(cls, guild_id: int, name: str, value: str):
-        guild = db.session.query(db.Guild).filter_by(id=guild_id).first()
-        if guild is None:
-            guild = db.Guild(id=guild_id)
-            db.session.add(guild)
-        already_existed = False
-        for setting in guild.settings:
-            if setting.name == name:
-                setting.value = value
-                already_existed = True
-        if already_existed is False:
-            setting = db.Setting(name=name, value=value, guild=guild)
-            db.session.add(setting)
-        db.session.commit()
-        return setting
-
-
-class YoutubeVideos:
-    @staticmethod
-    async def add_videos(playlist_id, videos: tuple):
-        playlist = db.session.query(db.YoutubePlaylist).filter_by(playlist_id=playlist_id).first()
-        if playlist is None:
-            playlist = db.YoutubePlaylist(playlist_id=playlist_id)
-            db.session.add(playlist)
-        for video_id in videos:
-            db_video = db.session.query(db.YoutubeVideo).filter_by(video_id=video_id).first()
-            if db_video is None:
-                db_video = db.YoutubeVideo(video_id=video_id)
-                db_video.playlists.append(playlist)
-                db.session.add(db_video)
-        db.session.commit()
-
-    @staticmethod
-    async def get_videos():
-        return map(lambda video: video.video_id, db.session.query(db.YoutubeVideo).all())
-
-    @staticmethod
-    async def get_playlists():
-        return map(lambda playlist: playlist.playlist_id, db.session.query(db.YoutubePlaylist).all())
+    DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///guilds.db')

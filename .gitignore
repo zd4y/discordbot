@@ -1,6 +1,7 @@
 __pycache__/
 .vscode/
-.venv/
+.idea/
+venv/
 .env
 guilds.db
 latest.log

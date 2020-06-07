@@ -1,10 +1,13 @@
 import re
 import discord
 import logging
-from . import db
+
+from . import crud
+from .bot import Bot
 from typing import Optional
+from .utils import to_str_bool, to_bool
 from discord.ext import commands, tasks
-from .config import Config, ServerConfig, YoutubeVideos
+from .config import Settings
 
 
 async def fetch(session, url, **kwargs):
@@ -13,7 +16,7 @@ async def fetch(session, url, **kwargs):
 
 
 class Listeners(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     @commands.Cog.listener()
@@ -61,7 +64,8 @@ class Listeners(commands.Cog):
             embed.description = f'Se ha producido un error:\n\n```{error_msg}```'
         else:
             embed.description = 'Error desconocido'
-            debug = ServerConfig.get_setting(ctx.guild.id, 'debug')
+            guild = crud.get_guid(ctx.guild.id)
+            debug = to_bool(crud.get_guild_setting(guild, 'debug'))
             if debug:
                 error_msg = str(error)
                 if error_msg:
@@ -71,22 +75,21 @@ class Listeners(commands.Cog):
 
 
 class Loops(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
         self.youtube_notifier.start()
 
     def cog_unload(self):
         self.youtube_notifier.cancel()
 
-    @tasks.loop(minutes=30)
+    @tasks.loop(minutes=Settings.LOOP_MINUTES)
     async def youtube_notifier(self):
         if self.bot.session is None:
             return
         logging.info('starting yt notifier')
-        for playlist in db.session.query(db.YoutubePlaylist).all():
+        for playlist in crud.get_all_playlists():
             if not playlist.guilds:
-                db.session.delete(playlist)
-                db.session.commit()
+                crud.delete_playlist(playlist)
                 continue
             logging.info(f'starting with playlist_id: {playlist.playlist_id}')
             url = 'https://www.googleapis.com/youtube/v3/playlistItems'
@@ -94,14 +97,14 @@ class Loops(commands.Cog):
                 'part': 'snippet,contentDetails',
                 'maxResults': 5,
                 'playlistId': playlist.playlist_id,
-                'key': Config.YOUTUBE_API_KEY
+                'key': Settings.YOUTUBE_API_KEY
             }
             videos = (await fetch(self.bot.session, url, params=params))['items'][::-1]
             logging.info(f'got {len(videos)} videos')
             for video in videos:
                 video_id = video['snippet']['resourceId']['videoId']
                 logging.info(f'checking the cache for the video: {video_id}')
-                db_video = await db.get(db.YoutubeVideo, video_id=video_id)
+                db_video = crud.get_video(video_id)
                 if db_video:
                     logging.info('video was in cache, skipping')
                     continue
@@ -111,7 +114,7 @@ class Loops(commands.Cog):
                     guild = self.bot.get_guild(db_guild.id)
                     logging.info(f'notifying guild: {guild.name}')
                     try:
-                        channel_id = int(await ServerConfig.get_setting(guild.id, 'notifications_channel'))
+                        channel_id = int(crud.get_guild_setting(db_guild, 'notifications_channel'))
                     except TypeError:
                         logging.info('channel not found!')
                         await guild.system_channel.send('Por favor elige un canal para las notificaciones de videos usando `config yt set channel #canal`')
@@ -121,12 +124,12 @@ class Loops(commands.Cog):
                     await channel.send(video_url)
                     logging.info('message sent')
 
-                await YoutubeVideos.add_videos(playlist.playlist_id, (video_id,))
+                crud.add_video(playlist, video_id)
 
 
 # TODO Put the help and aliases in the commands here
 class BotConfigCmds(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     def cog_check(self, ctx):
@@ -139,7 +142,7 @@ class BotConfigCmds(commands.Cog):
 
     @config.command()
     async def debug(self, ctx, arg: bool):
-        await ServerConfig.set_setting(ctx.guild.id, 'debug', arg)
+        crud.set_guild_setting(ctx.guild.id, 'debug', to_str_bool(arg))
         embed = discord.Embed(
             title='Debug editado! ✅',
             description=f'Debug ha sido puesto como `{arg}`',
@@ -154,7 +157,7 @@ class BotConfigCmds(commands.Cog):
     @commands.has_permissions(manage_guild=True)
     async def prefix(self, ctx, *, new_prefixes=None):
         if new_prefixes:
-            await ServerConfig.set_setting(ctx.guild.id, 'prefix', new_prefixes)
+            crud.set_guild_setting(ctx.guild.id, 'prefix', new_prefixes)
             embed = discord.Embed(
                 title='Prefix editado! ✅',
                 description=f'Los prefixes ahora son: {new_prefixes}',
@@ -162,7 +165,8 @@ class BotConfigCmds(commands.Cog):
             )
             await ctx.send(embed=embed)
         else:
-            prefixes = await ServerConfig.get_setting(ctx.guild.id, 'prefix')
+            guild = crud.get_guid(ctx.guild.id)
+            prefixes = crud.get_guild_setting(guild, 'prefix')
             if isinstance(prefixes, list):
                 prefixes = ' '.join(prefixes)
             embed = discord.Embed(
@@ -183,13 +187,17 @@ class BotConfigCmds(commands.Cog):
         embed.add_field(name='Seguir un canal de YouTube',
                         value=f'Para seguir un canal de youtube y recibir notificaciones de sus nuevos videos, usa `{ctx.prefix}config yt add channel <canal>`. Para más información usa `{ctx.prefix}help config yt add channel`\n\nTambién puedes usar `{ctx.prefix}config yt remove playlist <playlist_id>` para eliminar un canal (Puedes ver la id de las playlists más abajo)\n\u200b', inline=False)
 
-        notifications_channel = await ServerConfig.get_setting(ctx.guild.id, 'notifications_channel')
+        guild = crud.get_guid(ctx.guild.id)
+        notifications_channel = crud.get_guild_setting(guild, 'notifications_channel')
         try:
-            notifications_channel = discord.utils.get(ctx.guild.channels, id=int(notifications_channel)).mention
-        except Exception:
-            notifications_channel = 'Ninguno/Eliminado'
+            notifications_channel = int(notifications_channel)
+        except TypeError:
+            notifications_channel = 'Ninguno'
+        else:
+            notifications_channel = discord.utils.get(ctx.guild.channels, id=notifications_channel).mention
+
         value = f'El canal para notificaciones es: {notifications_channel}'
-        db_guild = await db.get(db.Guild, id=ctx.guild.id)
+        db_guild = crud.get_guid(ctx.guild.id)
         if db_guild:
             followed_playlists = db_guild.youtube_playlists
         else:
@@ -204,7 +212,7 @@ class BotConfigCmds(commands.Cog):
                         'part': 'snippet',
                         'maxResults': 1,
                         'playlistId': playlist.playlist_id,
-                        'key': Config.YOUTUBE_API_KEY
+                        'key': Settings.YOUTUBE_API_KEY
                     }
                     channel_title = (await fetch(self.bot.session, url, params=params))['items'][0]['snippet']['channelTitle']
                 value += f'\n- {playlist.playlist_id} (Videos de {channel_title})'
@@ -220,7 +228,7 @@ class BotConfigCmds(commands.Cog):
 
     @set_.command(help='Coloca el canal al cual se enviaran las novedades (nuevos videos canales de YouTube configurados)')
     async def channel(self, ctx, channel: discord.TextChannel):
-        await ServerConfig.set_setting(ctx.guild.id, 'notifications_channel', channel.id)
+        crud.set_guild_setting(ctx.guild.id, 'notifications_channel', str(channel.id))
         embed = discord.Embed(
             title='Canal colocado! ✅',
             description='El canal para las novedades ha sido colocado satisfactoriamente.',
@@ -246,7 +254,7 @@ class BotConfigCmds(commands.Cog):
                 'type': 'channel',
                 'maxResults': 1,
                 'q': yt_channel,
-                'key': Config.YOUTUBE_API_KEY
+                'key': Settings.YOUTUBE_API_KEY
             }
             channel_id = (await fetch(self.bot.session, url, params=params))['items'][0]['snippet']['channelId']
 
@@ -254,20 +262,17 @@ class BotConfigCmds(commands.Cog):
         params = {
             'part': 'snippet,contentDetails',
             'id': channel_id,
-            'key': Config.YOUTUBE_API_KEY
+            'key': Settings.YOUTUBE_API_KEY
         }
         channel = (await fetch(self.bot.session, url, params=params))['items'][0]
         channel_playlist = channel['contentDetails']['relatedPlaylists']['uploads']
         channel_info = channel['snippet']
         channel_title = channel_info['title']
 
-        db_guild = await db.get(db.Guild, id=ctx.guild.id)
+        db_guild = crud.get_guid(ctx.guild.id)
         if db_guild is None:
-            db_guild = db.Guild(id=ctx.guild.id)
-            db.session.add(db_guild)
-        db_playlist = await db.get(db.YoutubePlaylist, playlist_id=channel_playlist) or db.YoutubePlaylist(playlist_id=channel_playlist, channel=channel_title)
-        db_guild.youtube_playlists.append(db_playlist)
-        db.session.commit()
+            crud.create_guild(ctx.guild.id)
+        crud.add_playlist(guild=db_guild, playlist_id=channel_playlist, channel=channel_title)
 
         embed = discord.Embed(
             title='Canal Agregado! ✅',
@@ -284,16 +289,11 @@ class BotConfigCmds(commands.Cog):
 
     @remove.command()
     async def playlist(self, ctx, playlist_id):
-        db_guild = await db.get(db.Guild, id=ctx.guild.id)
-        if db_guild is None:
-            db_guild = db.Guild(id=ctx.guild.id)
-            db.session.add(db_guild)
-        else:
-            playlist = await db.get(db.YoutubePlaylist, playlist_id=playlist_id)
-            db_guild.youtube_playlists.remove(playlist)
-            if not playlist.guilds:
-                db.session.delete(playlist)
-        db.session.commit()
+        guild = crud.get_or_create_guild(ctx.guild.id)
+        playlist = crud.get_playlist(playlist_id)
+        guild.youtube_playlists.remove(playlist)
+        if not playlist.guilds:
+            crud.delete_playlist(playlist)
 
         embed = discord.Embed(
             title='Playlist eliminada! ✅',
@@ -320,7 +320,7 @@ class BotConfigCmds(commands.Cog):
 
 # TODO time specific commands, for example: mute user 10seconds
 class ModerationCmds(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     @commands.command(help='Elimina los últimos <cantidad> mensajes o el último si ningún argumento es usado.', usage='[cantidad]')
@@ -407,7 +407,7 @@ class ModerationCmds(commands.Cog):
 
 
 class UserCmds(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     @commands.command(help='Muestra ayuda acerca del bot', aliases=['ayuda', 'comandos', 'commands'], usage='[comando]')
@@ -459,7 +459,7 @@ class UserCmds(commands.Cog):
                 'type': 'channel',
                 'maxResults': 1,
                 'q': yt_channel,
-                'key': Config.YOUTUBE_API_KEY
+                'key': Settings.YOUTUBE_API_KEY
             }
             channel_id = (await fetch(self.bot.session, url, params=params))['items'][0]['snippet']['channelId']
 
@@ -467,7 +467,7 @@ class UserCmds(commands.Cog):
         params = {
             'part': 'contentDetails',
             'id': channel_id,
-            'key': Config.YOUTUBE_API_KEY
+            'key': Settings.YOUTUBE_API_KEY
         }
         channel_playlist = (await fetch(self.bot.session, url, params=params))['items'][0]['contentDetails']['relatedPlaylists']['uploads']
 
@@ -476,7 +476,7 @@ class UserCmds(commands.Cog):
             'part': 'snippet,contentDetails',
             'maxResults': 1,
             'playlistId': channel_playlist,
-            'key': Config.YOUTUBE_API_KEY
+            'key': Settings.YOUTUBE_API_KEY
         }
         latest_video = (await fetch(self.bot.session, url, params=params))['items'][0]
         video_url = 'https://www.youtube.com/watch?v=' + latest_video['snippet']['resourceId']['videoId']

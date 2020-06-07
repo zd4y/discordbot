@@ -1,14 +1,6 @@
-import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import relationship, sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, ForeignKey, BigInteger, Table
-
-
-DATABASE_URI = os.environ.get('DATABASE_URI') or 'sqlite:///guilds.db'
-
-engine = create_engine(DATABASE_URI, echo=False)
-Base = declarative_base()
+from .database import Base
+from sqlalchemy.orm import relationship
+from sqlalchemy import Table, BigInteger, ForeignKey, Integer, Column, String
 
 
 guild_playlists = Table(
@@ -58,16 +50,3 @@ class YoutubeVideo(Base):
     id = Column(Integer, primary_key=True)
     video_id = Column(String(50), nullable=False, unique=True)
     playlists = relationship('YoutubePlaylist', secondary=playlist_videos, back_populates='videos')
-
-
-def create_all():
-    Base.metadata.create_all(engine)
-
-
-session = sessionmaker(bind=engine)()
-
-
-async def get(model, **kwargs):
-    if kwargs is None:
-        raise TypeError('You must provide at least one key word argument')
-    return session.query(model).filter_by(**kwargs).first()
