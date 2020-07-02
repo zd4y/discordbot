@@ -61,7 +61,11 @@ def get_or_create_guild(guild_id: int):
     return get_or_create(model=Guild, id=guild_id)
 
 
-def get_playlist(playlist_id: str):
+def get_playlist(playlist_id: Optional[str] = None, db_id: Optional[int] = None):
+    if not db_id and not playlist_id:
+        raise ValueError('At least one argument is required.')
+    if db_id:
+        return get_by_id(model=YoutubePlaylist, obj_id=db_id)
     return get(model=YoutubePlaylist, playlist_id=playlist_id)
 
 

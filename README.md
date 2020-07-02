@@ -28,7 +28,10 @@ YOUTUBE_API_KEY={Your project's youtube api key here}
 DATABASE_URL={your database's URL}
 DEFAULT_SETTINGS={"prefix": "!", "debug": false}
 LOOP_MINUTES=30
+DEVELOPERS_ID=[123, 456]
 ```
+
+`DEVELOPERS_ID` is a json list of the discord id of each developer who has access to commands like `!reload` and `!debug` as an integer.
 
 Replace the text between the brackets with the actual tokens, you have to get those from [discord](https://discordapp.com/developers/applications/) and from [google](https://console.developers.google.com/).
 

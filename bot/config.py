@@ -11,3 +11,4 @@ class Settings:
     DEFAULT_SETTINGS = json.loads(os.environ['DEFAULT_SETTINGS'])
     YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY')
     DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///guilds.db')
+    DEVELOPERS_ID = json.loads(os.environ.get('DEVELOPERS_ID', '[]'))
