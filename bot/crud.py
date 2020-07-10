@@ -1,15 +1,17 @@
 from typing import Optional
+from datetime import datetime
+from discord import TextChannel
+from discord.ext.commands import Bot
+
 from sqlalchemy.orm import Session
 
 from .config import Settings
 from .database import Base, session
-from .models import YoutubePlaylist, YoutubeVideo, Guild, Setting
+from .models import YoutubePlaylist, YoutubeVideo, Guild, Setting, Moderation, VerificationRole
 
 
 def get_query(model: Base, db: Optional[Session] = None):
-    if db:
-        return db.query(model)
-    return model.query
+    return db.query(model) if db else model.query
 
 
 def get(model: Base, db: Optional[Session] = None, **kwargs):
@@ -32,10 +34,6 @@ def get_all_playlists(db: Optional[Session]):
     return query.all()
 
 
-def get_guid(guild_id):
-    return get_by_id(model=Guild, obj_id=guild_id)
-
-
 def create_one(model: Base, db: Optional[Session] = None, **kwargs):
     obj = model(**kwargs)
     if db is None:
@@ -51,6 +49,10 @@ def get_or_create(model: Base, db: Optional[Session] = None, **kwargs):
     if obj is None:
         obj = create_one(model, db, **kwargs)
     return obj
+
+
+def get_guid(guild_id):
+    return get_or_create(Guild, None, id=guild_id)
 
 
 def create_guild(guild_id: int):
@@ -112,7 +114,8 @@ def get_guild_setting(guild: Guild, setting_name: str, db: Optional[Session] = N
         return setting
     elif setting:
         return setting.value
-    return str(Settings.DEFAULT_SETTINGS.get(setting_name))
+    default = Settings.DEFAULT_SETTINGS.get(setting_name)
+    return str(default) if default else None
 
 
 def set_guild_setting(guild_id: int, setting_name: str, setting_value: str):
@@ -125,3 +128,94 @@ def set_guild_setting(guild_id: int, setting_name: str, setting_value: str):
         create_guild_setting(guild, setting_name, setting_value)
     return setting
 
+
+def get_channel_setting(
+        bot: Bot, guild: Guild, setting_name: str, db: Optional[Session] = None
+) -> Optional[TextChannel]:
+    channel_id = get_guild_setting(guild, setting_name, db)
+
+    channel = None
+    if channel_id and channel_id.isdigit():
+        channel = bot.get_channel(int(channel_id))
+
+    return channel
+
+
+def moderate(
+        moderation_type: str,
+        user_id: int,
+        date: datetime,
+        expiration_date: datetime,
+        guild_id: int,
+        moderator_id: int,
+        reason: str = ''
+) -> None:
+    create_one(
+        Moderation,
+        type=moderation_type,
+        user_id=user_id,
+        moderator_id=moderator_id,
+        reason=reason,
+        creation_date=date,
+        expiration_date=expiration_date,
+        guild_id=guild_id
+    )
+
+
+def get_moderation(moderation_type: str, user_id: int, guild_id: int):
+    return (
+        Moderation
+        .query
+        .filter_by(type=moderation_type, user_id=user_id, guild_id=guild_id)
+        .order_by(Moderation.id.desc())
+        .first()
+    )
+
+
+def get_moderations(moderation_type: str, user_id: int, guild_id: int):
+    return (
+        Moderation
+        .query
+        .filter_by(type=moderation_type, user_id=user_id, guild_id=guild_id)
+        .order_by(Moderation.id.desc())
+        .all()
+    )
+
+
+def get_all_moderations(guild_id: int, user_id: Optional[int] = None, revoked: Optional[bool] = None):
+    query = (
+        Moderation
+        .query
+        .filter_by(guild_id=guild_id)
+    )
+
+    if user_id:
+        query = query.filter_by(user_id=user_id)
+
+    if revoked is not None:
+        query = query.filter(Moderation.revoked == revoked, Moderation.expiration_date.isnot(None))
+
+    return query.order_by(Moderation.id.desc()).all()
+
+
+def revoke_moderation(moderation: Moderation):
+    moderation.revoked = True
+    session.commit()
+
+
+def add_verification_role(guild_id: int, role_id: int, emoji: str):
+    create_one(VerificationRole, guild_id=guild_id, role_id=role_id, emoji=emoji)
+
+
+def remove_verification_role(role_id: int):
+    role = VerificationRole.query.get(role_id)
+    session.delete(role)
+    session.commit()
+
+
+def get_verification_roles(guild_id: int):
+    return VerificationRole.query.filter_by(guild_id=guild_id).all()
+
+
+def get_role_by_emoji(guild_id: int, emoji: str):
+    return VerificationRole.query.filter_by(guild_id=guild_id, emoji=emoji).first()

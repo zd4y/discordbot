@@ -1,10 +1,9 @@
-import re
 import discord
 
+from .. import youtube
 from ..bot import Bot
-from ..utils import fetch
+from ..utils import is_url
 from typing import Optional
-from ..config import Settings
 from discord.ext import commands
 
 
@@ -84,38 +83,17 @@ class UserCmds(commands.Cog, name='Comandos para el usuario'):
         '\n<canal> puede ser la url o el nombre de un canal de youtube', aliases=['ultimo', 'youtube', 'latest'],
         usage='[canal]'
     )
-    async def yt(self, ctx: commands.Context, yt_channel: str):
-        pattern = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
-        is_url = bool(pattern.search(yt_channel))
-        if is_url:
+    async def yt(self, ctx: commands.Context, *, yt_channel: str):
+        if is_url(yt_channel):
             channel_id = yt_channel.split('/')[-1]
         else:
-            url = 'https://www.googleapis.com/youtube/v3/search'
-            params = {
-                'part': 'snippet',
-                'type': 'channel',
-                'maxResults': 1,
-                'q': yt_channel,
-                'key': Settings.YOUTUBE_API_KEY
-            }
-            channel_id = (await fetch(self.bot.session, url, params=params))['items'][0]['snippet']['channelId']
+            channel_id = await youtube.search_channel(self.bot.session, yt_channel)
 
-        url = 'https://www.googleapis.com/youtube/v3/channels'
-        params = {
-            'part': 'contentDetails',
-            'id': channel_id,
-            'key': Settings.YOUTUBE_API_KEY
-        }
-        channel_playlist = (await fetch(self.bot.session, url, params=params))['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+        channel_playlist = await youtube.get_channel_playlists(self.bot.session, channel_id)
 
-        url = 'https://www.googleapis.com/youtube/v3/playlistItems'
-        params = {
-            'part': 'snippet,contentDetails',
-            'maxResults': 1,
-            'playlistId': channel_playlist,
-            'key': Settings.YOUTUBE_API_KEY
-        }
-        latest_video = (await fetch(self.bot.session, url, params=params))['items'][0]
+        videos = await youtube.get_playlist_videos(self.bot.session, channel_playlist, max_results=1)
+        latest_video = videos[0]
+
         video_url = 'https://www.youtube.com/watch?v=' + latest_video['snippet']['resourceId']['videoId']
         await ctx.send(video_url)
 
