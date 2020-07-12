@@ -8,7 +8,7 @@ from discord.ext.commands import Bot, Context, when_mentioned_or
 
 
 def get_prefix(bot: Bot, msg: Message):
-    guild = crud.get_guid(msg.guild.id)
+    guild = crud.get_guild(msg.guild.id)
     prefix_setting = crud.get_guild_setting(guild, 'prefix')
     prefixes = prefix_setting.split()
     return when_mentioned_or(*prefixes)(bot, msg)
@@ -61,7 +61,7 @@ async def get_verification_message(bot: Bot, guild: Guild) -> Optional[Message]:
 
 
 async def update_message(bot: Bot, ctx: Context):
-    guild = crud.get_guid(ctx.guild.id)
+    guild = crud.get_guild(ctx.guild.id)
     text = crud.get_guild_setting(guild, 'verification_message_text')
     message = await get_verification_message(bot, guild)
 
@@ -81,3 +81,14 @@ async def update_message(bot: Bot, ctx: Context):
         )
 
         await message.edit(content=None, embed=embed)
+
+
+async def unmoderate(
+        func: callable, member_id: int, guild_id: int, moderation_type: str, expiration_needed: bool = True
+):
+    if func:
+        moderation = crud.get_moderation(moderation_type, member_id, guild_id)
+
+        if moderation.expired or not expiration_needed:
+            await func()
+            crud.revoke_moderation(moderation)

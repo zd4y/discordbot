@@ -60,7 +60,7 @@ class Verification(commands.Cog, name='Configura la verificacion'):
     @verification.command()
     async def enable(self, ctx: commands.Context):
         everyone = ctx.guild.default_role
-        guild = crud.get_guid(ctx.guild.id)
+        guild = crud.get_guild(ctx.guild.id)
         channel_id = crud.get_guild_setting(guild, 'verification_channel')
 
         for guild_channel in ctx.guild.channels:

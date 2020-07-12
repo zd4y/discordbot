@@ -5,6 +5,7 @@ from ..bot import Bot
 from .. import crud, youtube
 from ..utils import is_url, get_verification_message
 
+
 settings = {
     'moderation': 'moderation_logs_channel',
     'youtube': 'notifications_channel',
@@ -21,8 +22,16 @@ class ServerConfigCmds(commands.Cog, name='Configuraciones del bot para el servi
     def cog_check(self, ctx: commands.Context):
         return ('manage_guild', True) in ctx.author.permissions_in(ctx.channel)
 
-    @commands.command(help='...', invoke_without_command=True)
-    async def setchannel(self, ctx: commands.Context, setting, channel: discord.TextChannel):
+    #
+    # Set
+    #
+
+    @commands.group(help='Coloca canales y configuraciones. Canales para colocar: ' + ' '.join(settings.keys()))
+    async def set(self, ctx: commands.Context):
+        pass
+
+    @set.command(name='channel', invoke_without_command=True)
+    async def set_channel(self, ctx: commands.Context, setting, channel: discord.TextChannel):
         if setting not in settings:
             return
 
@@ -46,9 +55,8 @@ class ServerConfigCmds(commands.Cog, name='Configuraciones del bot para el servi
             message = await channel.send(embed=embed)
 
             crud.set_guild_setting(ctx.guild.id, 'verification_message', message.id)
-            crud.set_guild_setting(ctx.guild.id, 'verification_channel', message.channel.id)
-        else:
-            crud.set_guild_setting(ctx.guild.id, settings[setting], str(channel.id))
+
+        crud.set_guild_setting(ctx.guild.id, settings[setting], str(channel.id))
 
         embed = discord.Embed(
             title='Canal colocado! ✅',
@@ -57,10 +65,6 @@ class ServerConfigCmds(commands.Cog, name='Configuraciones del bot para el servi
         )
 
         await ctx.send(embed=embed)
-
-    @commands.group(help='Coloca canales y configuraciones. Canales para colocar: ' + ' '.join(settings.keys()))
-    async def set(self, ctx: commands.Context):
-        pass
 
     @set.command(
         help='Muestra el prefix del bot o lo cambia, puedes cambiarlo a múltiples prefixes pasando varios argumentos '
@@ -82,7 +86,7 @@ class ServerConfigCmds(commands.Cog, name='Configuraciones del bot para el servi
             )
             await ctx.send(embed=embed)
         else:
-            guild = crud.get_guid(ctx.guild.id)
+            guild = crud.get_guild(ctx.guild.id)
             prefixes = crud.get_guild_setting(guild, 'prefix')
             embed = discord.Embed(
                 title='Prefix del Bot',
@@ -109,7 +113,7 @@ class ServerConfigCmds(commands.Cog, name='Configuraciones del bot para el servi
         embed.add_field(name='Seguir un canal de YouTube',
                         value=value, inline=False)
 
-        guild = crud.get_guid(ctx.guild.id)
+        guild = crud.get_guild(ctx.guild.id)
         notifications_channel = crud.get_guild_setting(guild, 'notifications_channel')
         try:
             notifications_channel = int(notifications_channel)
@@ -119,7 +123,7 @@ class ServerConfigCmds(commands.Cog, name='Configuraciones del bot para el servi
             notifications_channel = discord.utils.get(ctx.guild.channels, id=notifications_channel).mention
 
         value = f'El canal para notificaciones es: {notifications_channel}'
-        db_guild = crud.get_guid(ctx.guild.id)
+        db_guild = crud.get_guild(ctx.guild.id)
         if db_guild:
             followed_playlists = db_guild.youtube_playlists
         else:
@@ -137,7 +141,11 @@ class ServerConfigCmds(commands.Cog, name='Configuraciones del bot para el servi
         embed.add_field(name='Configuraciones Actuales', value=value)
         await ctx.send(embed=embed)
 
-    @commands.group(help='')
+    #
+    # Add
+    #
+
+    @commands.group()
     async def add(self, ctx: commands.Context):
         pass
 
@@ -153,7 +161,7 @@ class ServerConfigCmds(commands.Cog, name='Configuraciones del bot para el servi
         channel_info = channel['snippet']
 
         channel_title = channel_info['title']
-        db_guild = crud.get_or_create_guild(ctx.guild.id)
+        db_guild = crud.get_guild(ctx.guild.id)
         crud.add_playlist(guild=db_guild, playlist_id=channel_playlist, channel=channel_title)
 
         embed = discord.Embed(
@@ -164,6 +172,10 @@ class ServerConfigCmds(commands.Cog, name='Configuraciones del bot para el servi
         embed.set_thumbnail(url=channel_info['thumbnails']['default']['url'])
         await ctx.send(embed=embed)
 
+    #
+    # Remove
+    #
+
     @commands.group(help='')
     async def remove(self, ctx: commands.Context):
         pass
@@ -171,7 +183,7 @@ class ServerConfigCmds(commands.Cog, name='Configuraciones del bot para el servi
     # TODO: Use an integer instead of the playlist_id
     @remove.command(name='ytchannel')
     async def remove_ytchannel(self, ctx: commands.Context, num: int):
-        guild = crud.get_or_create_guild(ctx.guild.id)
+        guild = crud.get_guild(ctx.guild.id)
         playlist = crud.get_playlist(db_id=num)
         guild.youtube_playlists.remove(playlist)
         if not playlist.guilds:
@@ -184,15 +196,14 @@ class ServerConfigCmds(commands.Cog, name='Configuraciones del bot para el servi
         )
         await ctx.send(embed=embed)
 
-    @remove.command()
-    async def channel(self, ctx: commands.Context, name: str):
+    @remove.command(name='channel')
+    async def remove_channel(self, ctx: commands.Context, name: str):
         if name not in settings:
             return
 
         if name == 'verification':
-            guild = crud.get_guid(ctx.guild.id)
+            guild = crud.get_guild(ctx.guild.id)
             message = await get_verification_message(self.bot, guild)
-            await message.delete()
             crud.set_guild_setting(ctx.guild.id, 'verification_message', '')
 
         crud.set_guild_setting(ctx.guild.id, settings[name], '')

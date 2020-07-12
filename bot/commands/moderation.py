@@ -4,9 +4,7 @@ from datetime import datetime, timedelta
 
 from .. import crud
 from ..bot import Bot
-from ..models import Moderation
-from ..utils import callback as cb
-
+from ..utils import callback as cb, unmoderate
 
 no_logs_channel_msg = 'Usuario {title}. Considere agregar un canal para los logs usando `{prefix}setchannel ' \
                       'moderation #canal`. Este mensaje se eliminara en 10 segundos.'
@@ -47,44 +45,45 @@ class ModerationCmds(commands.Cog, name='Moderación'):
             reason = None
             duration = None
 
-        await ctx.message.delete()
         moderation_date = datetime.utcnow()
 
         expiration_date = None
         if duration and after_duration:
             expiration_date = moderation_date + timedelta(minutes=duration)
 
-        crud.moderate(title, member.id, moderation_date, expiration_date, ctx.guild.id, ctx.author.id, reason or '')
+        value = ''
 
-        await callback(reason=reason)
+        if reason:
+            value += f'\n**Razón**: {reason}'
 
-        guild = crud.get_guid(member.guild.id)
-        channel = crud.get_channel_setting(self.bot, guild, 'moderation_logs_channel')
+        if expiration_date:
+            value += f'\n**Duración**: {duration} minutos'
 
         dm = member.dm_channel
         if dm is None:
             dm = await member.create_dm()
 
         try:
-            await dm.send(f'Has sido {title} en {ctx.guild.name}. Recuerda seguir las reglas!')
+            await dm.send(f'Has sido {title} en {ctx.guild.name}. Recuerda seguir las reglas!' + value)
         except discord.Forbidden:
             await ctx.send('El usuario tiene bloqueados los mensajes directos', delete_after=10)
+
+        await callback(reason=reason)
+        crud.moderate(title, member.id, moderation_date, expiration_date, ctx.guild.id, ctx.author.id, reason or '')
+        await ctx.message.delete()
+
+        guild = crud.get_guild(member.guild.id)
+        channel = crud.get_set_channel(self.bot, guild, 'moderation_logs_channel')
 
         if channel:
             embed = discord.Embed(
                 title=f'Usuario {title}',
-                description=f'El usuario {member.mention} ha sido {title} por {ctx.author.mention}',
+                description=f'El usuario {member.mention} ha sido {title} por {ctx.author.mention}' + value,
                 color=discord.Color.green()
             )
 
-            if reason:
-                embed.description += f'\n**Razón**: {reason}'
-
-            if expiration_date:
-                embed.description += f'\n**Duración**: {duration} minutos'
-
             message = member.mention
-            rules_channel = crud.get_channel_setting(self.bot, guild, 'rules_channel')
+            rules_channel = crud.get_set_channel(self.bot, guild, 'rules_channel')
 
             if rules_channel:
                 value = 'Lee las reglas: ' + rules_channel.mention
@@ -98,11 +97,7 @@ class ModerationCmds(commands.Cog, name='Moderación'):
 
         if expiration_date:
             await discord.utils.sleep_until(expiration_date)
-            moderation = crud.get_moderation(title, member.id, ctx.guild.id)
-
-            if moderation.expired:
-                await after_duration(reason=reason)
-                crud.revoke_moderation(moderation)
+            await unmoderate(after_duration, member.id, ctx.guild.id, title)
 
     @commands.command(help='Advierte a un usuario.', usage='<usuario> [razón]')
     @commands.has_permissions(manage_messages=True)
@@ -113,56 +108,6 @@ class ModerationCmds(commands.Cog, name='Moderación'):
             role = await ctx.guild.create_role(name='Warning', color=discord.Color.darker_grey())
 
         await self.moderate(ctx, cb(member.add_roles, role), 'advertido', reason, member)
-
-    def show_history(self, moderation: Moderation, embed: discord.Embed, include_type=True):
-        embed.description += '\n'
-
-        for index, moderation in enumerate(moderation):
-            embed.description += f'\n`{index + 1}` '
-
-            if include_type:
-                embed.description += f'[{moderation.type.title()}] '
-
-            reason = moderation.reason or 'Sin razón'
-            embed.description += f'**{reason}** '
-
-            moderator_id = moderation.moderator_id
-            moderator = None
-
-            if moderator_id:
-                channel: discord.TextChannel
-                moderator = discord.utils.get(self.bot.users, id=int(moderator_id))
-
-            if moderator:
-                embed.description += f'por {moderator.mention}'
-
-            embed.description += 'en `' + moderation.creation_date.strftime('%a %d, %Y') + '`'
-
-    @commands.command()
-    async def history(self, ctx: commands.Context, member: discord.Member):
-        history = crud.get_all_moderations(ctx.guild.id, member.id)
-
-        embed = discord.Embed(
-            title=f'Historial de moderación',
-            description=f'Historial de {member.mention}. Total: {len(history)}',
-            color=discord.Color.red()
-        )
-
-        self.show_history(history, embed)
-        await ctx.send(embed=embed)
-
-    @commands.command()
-    async def warninfo(self, ctx: commands.Context, member: discord.Member):
-        warnings = crud.get_moderations('advertido', member.id, ctx.guild.id)
-
-        embed = discord.Embed(
-            title=f'Historial de warnings',
-            description=f'Warnings de {member.mention}. Total: {len(warnings)}',
-            color=discord.Color.red()
-        )
-
-        self.show_history(warnings, embed, include_type=False)
-        await ctx.send(embed=embed)
 
     @commands.command(help='Elimina los últimos <cantidad> mensajes o el último si ningún argumento es usado.', usage='[cantidad]')
     @commands.has_permissions(manage_messages=True)

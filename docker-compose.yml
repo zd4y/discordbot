@@ -7,8 +7,6 @@ services:
     volumes:
       - ./bot:/app/bot
       - ./alembic/versions:/app/alembic/versions
-    ports:
-      - '8000:80'
 
   db:
     image: 'postgres:13'

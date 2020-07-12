@@ -1,10 +1,12 @@
 import discord
+from discord.ext import commands
 
-from .. import youtube
+from typing import Optional, List, Union
+
 from ..bot import Bot
 from ..utils import is_url
-from typing import Optional
-from discord.ext import commands
+from .. import youtube, crud
+from ..models import Moderation
 
 
 class UserCmds(commands.Cog, name='Comandos para el usuario'):
@@ -48,6 +50,7 @@ class UserCmds(commands.Cog, name='Comandos para el usuario'):
                     description=f'Usa `{ctx.prefix}help` para obtener una lista sobre los comandos.',
                     color=discord.Color.red()
                 )
+                await ctx.send(embed=embed)
             else:
                 embed = discord.Embed(
                     title=f'Ayuda sobre el comando {command.name}',
@@ -156,4 +159,82 @@ class UserCmds(commands.Cog, name='Comandos para el usuario'):
         embed.set_image(url='https://d2dgtayfmpkokn.cloudfront.net/wp-content/uploads/sites/322/2016/09/11074109/google-icon.jpg')
         embed.set_author(name='Author')
         embed.add_field(name='Field', value='Value')
+        await ctx.send(embed=embed)
+
+    def show_history(self, moderation: List[Moderation], embed: discord.Embed, include_type=True):
+        embed.description += '\n'
+
+        for index, moderation in enumerate(moderation):
+            embed.description += f'\n`{index + 1}` '
+
+            if include_type:
+                embed.description += f'[{moderation.type.title()}] '
+
+            reason = moderation.reason or 'Sin razón'
+            embed.description += f'**{reason}** '
+
+            moderator_id = moderation.moderator_id
+            moderator = None
+
+            if moderator_id:
+                channel: discord.TextChannel
+                moderator = discord.utils.get(self.bot.users, id=int(moderator_id))
+
+            if moderator:
+                embed.description += f'por {moderator.mention}'
+
+            embed.description += 'en `' + moderation.creation_date.strftime('%a %d, %Y') + '`'
+
+    @staticmethod
+    async def can_see_history(ctx: commands.Context, member: Optional[discord.Member]):
+        contributors = discord.utils.get(ctx.guild.roles, name='Contributors')
+
+        if member and (not isinstance(member, int)) and (not ctx.author.top_role > contributors):
+            await ctx.send('No puedes ver el historial de este usuario.')
+            return False
+
+        return True
+
+    @commands.command()
+    async def history(
+            self, ctx: commands.Context, member_or_page: Union[discord.Member, None, int] = None, page: int = 1
+    ):
+        if not await self.can_see_history(ctx, member_or_page):
+            return
+
+        member = member_or_page
+        if member is None or isinstance(member, int):
+            page = 1
+            member = ctx.author
+
+        history = crud.get_all_moderations(ctx.guild.id, member.id, page=page)
+
+        embed = discord.Embed(
+            title=f'Historial de moderación',
+            description=f'Historial de {member.mention}',
+            color=discord.Color.red()
+        )
+
+        embed.set_footer(text=f'Página {page}')
+
+        self.show_history(history, embed)
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    async def warninfo(self, ctx: commands.Context, member: discord.Member):
+        if not await self.can_see_history(ctx, member):
+            return
+
+        if member is None:
+            member = ctx.author
+
+        warnings = crud.get_moderations('advertido', member.id, ctx.guild.id)
+
+        embed = discord.Embed(
+            title=f'Historial de warnings',
+            description=f'Warnings de {member.mention}',
+            color=discord.Color.red()
+        )
+
+        self.show_history(warnings, embed, include_type=False)
         await ctx.send(embed=embed)

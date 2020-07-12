@@ -88,7 +88,7 @@ class Listeners(commands.Cog):
 
         if message is None:
             embed.description = unknown_error_msg
-            guild = crud.get_guid(ctx.guild.id)
+            guild = crud.get_guild(ctx.guild.id)
             debug = to_bool(crud.get_guild_setting(guild, 'debug'))
             if debug:
                 error_msg = str(error)
@@ -100,7 +100,7 @@ class Listeners(commands.Cog):
 
     @staticmethod
     def is_verification_message(payload):
-        guild = crud.get_guid(payload.guild_id)
+        guild = crud.get_guild(payload.guild_id)
         message_id = crud.get_guild_setting(guild, 'verification_message')
 
         if not message_id:
